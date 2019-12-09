@@ -26,7 +26,7 @@ class NiftiFolder(data.Dataset):
         return len(self._files)
 
     def __getitem__(self, item):
-        scan = nib.load(self._files[item])
+        scan = nib.load(self._files[item].path)
         scan_array = scan.get_fdata()
 
         if self._transform:

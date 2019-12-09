@@ -1,9 +1,13 @@
+import operator
 import os
+import torch
 
 import pytest
 import nibabel as nib
 from brats.data import datasets
 import numpy as np
+
+from torchvision.transforms import Lambda
 
 INPUT_IMAGE_SHAPE = (10, 16, 16, 4)
 IMAGES = 2
@@ -29,3 +33,10 @@ class TestNiftiFolder:
 
         for idx in range(len(dataset)):
             assert dataset[idx].shape == INPUT_IMAGE_SHAPE
+
+    def test_if_applies_transforms(self, input_directory):
+        transform = Lambda(lambda x: np.pad(x, (2, 2)))
+        dataset = datasets.NiftiFolder(input_directory, transform)
+
+        for idx in range(len(dataset)):
+            assert np.all(dataset[idx].shape == np.array(INPUT_IMAGE_SHAPE) + 4)
