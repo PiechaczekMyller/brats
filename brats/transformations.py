@@ -1,4 +1,5 @@
 import numpy as np
+
 CHANNELS = 3
 
 
@@ -12,7 +13,7 @@ class HistogramMatchingTransform:
         Args:
             template (np.ndarray): Template which will be used for histogram
                 matching in future calls.
-                Dimensions - (Height, Width, Depth, Chennel)
+                Dimensions - (Height, Width, Depth, Channel)
         """
         self.template = template
 
@@ -25,6 +26,7 @@ class HistogramMatchingTransform:
         Returns:
              np.ndarray: Normalized volume with the same shape as input volume
         """
+        assert self.template.ndim == volume.ndim
         result = np.zeros_like(volume)
         for channel in range(volume.shape[CHANNELS]):
             result[..., channel] = self.hist_match(volume[..., channel],
