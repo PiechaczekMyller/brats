@@ -16,6 +16,7 @@ class NiftiFolder(data.Dataset):
     scans/patient002.nii.gz
     where file scans/patient000.nii.gz contains scan of the patient 001 in 4 modalities:
     T1, T1gd, T2w, Flair
+    (Note that the order of the modalities doesn't matter, however it should be consistent for whole dataset)
     """
 
     def __init__(self, root: str, transform=None):
