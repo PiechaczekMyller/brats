@@ -1,11 +1,13 @@
 import torch
 import torch.nn as nn
 
+CHANNEL, HEIGHT, WIDTH = 1, 2, 3
 
-class DiceLoss(nn.Module):
+
+class DiceLossOneClass(nn.Module):
     """
-    Compute per channel Dice Loss for single class.
-    The loss will be average across channels.
+    Compute Dice Loss for single class.
+    The loss will be averaged across channels.
     """
 
     def __init__(self, epsilon: float = 1e-5):
@@ -13,7 +15,7 @@ class DiceLoss(nn.Module):
         Args:
             epsilon: smooth factor to prevent division by zero
         """
-        super(DiceLoss, self).__init__()
+        super(DiceLossOneClass, self).__init__()
         self.epsilon = epsilon
 
     def __call__(self, prediction: torch.Tensor,
@@ -31,9 +33,9 @@ class DiceLoss(nn.Module):
         """
         prediction = prediction.contiguous()
         target = target.contiguous()
-        intersection = (prediction * target).sum()
+        intersection = (prediction * target).sum(dim=(CHANNEL, HEIGHT, WIDTH))
 
-        loss = 1 - ((2. * intersection) / (prediction.sum() + target.sum() +
-                                           self.epsilon))
-        return loss
-
+        loss = 1 - ((2. * intersection) / (
+                prediction.sum(dim=(CHANNEL, HEIGHT, WIDTH)) +
+                target.sum(dim=(CHANNEL, HEIGHT, WIDTH)) + self.epsilon))
+        return torch.mean(loss)
