@@ -1,13 +1,7 @@
 import pytest
-from brats import models
-
-import os
 import torch
 
-import pytest
-import nibabel as nib
-from brats.data import datasets
-import numpy as np
+from brats import models
 
 
 class TestUnet3D:
