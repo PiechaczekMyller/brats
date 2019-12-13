@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 
-class UNetBlock(nn.Module):
+class UNet3DBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.conv1 = nn.Conv3d(
@@ -33,25 +33,25 @@ class UNet3D(nn.Module):
         super(UNet3D, self).__init__()
 
         features = init_features
-        self.encoder1 = UNetBlock(in_channels, features)
-        self.pool1 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.encoder2 = UNetBlock(features, features * 2)
-        self.pool2 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.encoder3 = UNetBlock(features * 2, features * 4)
-        self.pool3 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.encoder4 = UNetBlock(features * 4, features * 8)
-        self.pool4 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
+        self.encoder1 = UNet3DBlock(in_channels, features)
+        self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.encoder2 = UNet3DBlock(features, features * 2)
+        self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.encoder3 = UNet3DBlock(features * 2, features * 4)
+        self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.encoder4 = UNet3DBlock(features * 4, features * 8)
+        self.pool4 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
 
-        self.bottleneck = UNetBlock(features * 8, features * 16)
+        self.bottleneck = UNet3DBlock(features * 8, features * 16)
 
-        self.upconv4 = nn.ConvTranspose3d(features * 16, features * 8, kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.decoder4 = UNetBlock((features * 8) * 2, features * 8)
-        self.upconv3 = nn.ConvTranspose3d(features * 8, features * 4, kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.decoder3 = UNetBlock((features * 4) * 2, features * 4)
-        self.upconv2 = nn.ConvTranspose3d(features * 4, features * 2, kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.decoder2 = UNetBlock((features * 2) * 2, features * 2)
-        self.upconv1 = nn.ConvTranspose3d(features * 2, features, kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.decoder1 = UNetBlock(features * 2, features)
+        self.upconv4 = nn.ConvTranspose3d(features * 16, features * 8, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.decoder4 = UNet3DBlock((features * 8) * 2, features * 8)
+        self.upconv3 = nn.ConvTranspose3d(features * 8, features * 4, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.decoder3 = UNet3DBlock((features * 4) * 2, features * 4)
+        self.upconv2 = nn.ConvTranspose3d(features * 4, features * 2, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.decoder2 = UNet3DBlock((features * 2) * 2, features * 2)
+        self.upconv1 = nn.ConvTranspose3d(features * 2, features, kernel_size=(2, 2, 2), stride=(2, 2, 2))
+        self.decoder1 = UNet3DBlock(features * 2, features)
         self.mapper = nn.Conv3d(in_channels=features, out_channels=out_channels, kernel_size=1)
 
     def forward(self, input):
@@ -80,5 +80,4 @@ class UNet3D(nn.Module):
         dec1 = self.decoder1(dec1)
 
         maps = self.mapper(dec1)
-
         return torch.sigmoid(maps)
