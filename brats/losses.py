@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+ZERO_AND_ONE = torch.tensor([0., 1.])
+
 
 class DiceLossOneClass(nn.Module):
     """
@@ -13,7 +15,7 @@ class DiceLossOneClass(nn.Module):
         Args:
             epsilon: smooth factor to prevent division by zero
         """
-        super(DiceLossOneClass, self).__init__()
+        super().__init__()
         self.epsilon = epsilon
 
     def __call__(self, prediction: torch.Tensor,
@@ -28,11 +30,12 @@ class DiceLossOneClass(nn.Module):
         Returns:
             torch.Tensor: Computed Dice Loss
         """
+        assert all(
+            [value in ZERO_AND_ONE for value in torch.unique(prediction)])
+        assert all([value in ZERO_AND_ONE for value in torch.unique(target)])
         all_but_batch_dims = list(range(1, target.dim()))
-        prediction = prediction.contiguous()
-        target = target.contiguous()
         intersection = (prediction * target).sum(dim=all_but_batch_dims)
-        loss = 1 - ((2. * intersection) / (
-                prediction.sum(dim=all_but_batch_dims) +
-                target.sum(dim=all_but_batch_dims) + self.epsilon))
+        union = prediction.sum(dim=all_but_batch_dims) + \
+                target.sum(dim=all_but_batch_dims)
+        loss = 1 - ((2. * intersection) / (union + self.epsilon))
         return torch.mean(loss)
