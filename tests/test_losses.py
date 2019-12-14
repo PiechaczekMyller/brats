@@ -4,7 +4,8 @@ import numpy as np
 
 from brats.losses import DiceLossOneClass
 
-BATCH_DIMS = (2, 5, 5, 5)
+BATCH_DIMS = (2, 1, 5, 5, 5)
+CHANNEL_DIM = 1
 
 
 class TestDiceLossOneClass:
@@ -36,5 +37,7 @@ class TestDiceLossOneClass:
                                0.334)
                               ])
     def test_if_returns_expected_values(self, images, target, result):
-        assert np.isclose(DiceLossOneClass()(images, target), result,
+        assert np.isclose(DiceLossOneClass()(images.unsqueeze(dim=CHANNEL_DIM),
+                                             target.unsqueeze(dim=CHANNEL_DIM)),
+                          result,
                           atol=1.e-2)
