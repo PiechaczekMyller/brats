@@ -28,7 +28,7 @@ class UNet3DBlock(nn.Module):
 
 class UNet3D(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, init_features=32):
-        super(UNet3D, self).__init__()
+        super().__init__()
 
         features = init_features
         self.encoder1 = UNet3DBlock(in_channels, features)
