@@ -25,9 +25,13 @@ def main():
     template = nib.load(args.template_path)
     template = template.get_fdata()
     transforms = Compose([HistogramMatchingTransform(template)])
-    for file_path in list(os.scandir(args.dataset_path)):
-        file = nib.load(file_path)
-        file = file.get_fdata()
-        transformed = transforms(file)
-        file_name = os.path.basename(file_path)
-        nib.save(transformed, os.path.join(args.output_dir, file_name))
+    for dir_entry in list(os.scandir(args.dataset_path)):
+        image = nib.load(dir_entry.path)
+        image_data = image.get_fdata()
+        transformed = transforms(image_data)
+        transformed = nib.Nifti1Image(transformed, image.affine)
+        nib.save(transformed, os.path.join(args.output_dir, dir_entry.name))
+
+
+if __name__ == '__main__':
+    main()
