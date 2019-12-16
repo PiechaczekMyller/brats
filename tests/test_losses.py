@@ -19,7 +19,7 @@ class TestDiceLossOneClass:
         target = torch.ones(*BATCH_DIMS)
         assert np.isclose(DiceLossOneClass()(images, target), 1, atol=1.e-4)
 
-    def test_if_works_for_non_binary_data(self):
+    def test_if_raises_on_non_binarized_input(self):
         images = torch.ones(*BATCH_DIMS) * 0.5
         target = torch.ones(*BATCH_DIMS)
         with pytest.raises(AssertionError):
