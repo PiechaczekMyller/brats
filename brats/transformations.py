@@ -50,7 +50,7 @@ class HistogramMatchingTransformation:
             """
         positive = source > 0
         result = np.zeros_like(source)
-        source = source[source > 0].ravel()
+        source = source[positive].ravel()
         template = template[template > 0].ravel()
         # get the set of unique pixel values and their corresponding indices and
         # counts
