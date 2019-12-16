@@ -1,9 +1,9 @@
 import numpy as np
 
-CHANNELS = 3
+CHANNELS_IDX = 3
 
 
-class HistogramMatchingTransform:
+class HistogramMatchingTransformation:
     """
     Transformation performing histogram matching of volumes
     """
@@ -28,7 +28,7 @@ class HistogramMatchingTransform:
         """
         assert self.template.ndim == volume.ndim
         result = np.zeros_like(volume)
-        for channel in range(volume.shape[CHANNELS]):
+        for channel in range(volume.shape[CHANNELS_IDX]):
             result[..., channel] = self.hist_match(volume[..., channel],
                                                    self.template[..., channel])
         return result
@@ -48,7 +48,7 @@ class HistogramMatchingTransform:
                 np.ndarray: The transformed output image
                     of the same shape as input
             """
-        nonzero = source > 0
+        positive = source > 0
         result = np.zeros_like(source)
         source = source[source > 0].ravel()
         template = template[template > 0].ravel()
@@ -71,5 +71,5 @@ class HistogramMatchingTransform:
         # that correspond most closely to the quantiles in the source image
         interp_t_values = np.interp(source_quantiles, template_quantiles,
                                     template_values)
-        result[nonzero] = interp_t_values[bin_idx]
+        result[positive] = interp_t_values[bin_idx]
         return result

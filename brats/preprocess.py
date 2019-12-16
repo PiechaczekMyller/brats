@@ -4,7 +4,7 @@ import nibabel as nib
 from argparse import ArgumentParser
 from torchvision.transforms import Compose
 
-from brats.transformations import HistogramMatchingTransform
+from brats.transformations import HistogramMatchingTransformation
 
 
 def parse_args():
@@ -24,8 +24,8 @@ def main():
     args = parse_args()
     template = nib.load(args.template_path)
     template = template.get_fdata()
-    transforms = Compose([HistogramMatchingTransform(template)])
-    for dir_entry in list(os.scandir(args.dataset_path)):
+    transforms = Compose([HistogramMatchingTransformation(template)])
+    for dir_entry in os.scandir(args.dataset_path):
         image = nib.load(dir_entry.path)
         image_data = image.get_fdata()
         transformed = transforms(image_data)
