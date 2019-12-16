@@ -1,13 +1,11 @@
-import operator
 import os
-import torch
 
-import pytest
 import nibabel as nib
-from brats.data import datasets
 import numpy as np
-
+import pytest
 from torchvision.transforms import Lambda
+
+from brats.data import datasets
 
 INPUT_IMAGE_SHAPE = (10, 16, 16, 4)
 IMAGES = 2

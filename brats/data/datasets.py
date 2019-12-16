@@ -1,9 +1,7 @@
 import os
 
-from torch.utils import data
 import nibabel as nib
-
-from torchvision.datasets import ImageFolder
+from torch.utils import data
 
 
 class NiftiFolder(data.Dataset):
