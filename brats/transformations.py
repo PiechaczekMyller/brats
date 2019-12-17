@@ -1,6 +1,7 @@
 import torch
-
+from torch.nn import functional as F
 import numpy as np
+from torchvision import transforms
 
 CHANNELS_IDX = 3
 
@@ -122,3 +123,18 @@ class BinarizationTransformation:
             raise ValueError("img should be either np.ndarray or torch.Tensor")
         img[img > 0] = 1
         return img
+
+
+class ResizeVolumeTransformation:
+    def __call__(self, tensor, size):
+        out = F.interpolate(tensor, size=size)  # The resize operation on tensor.
+        return out
+
+
+class NormalizeVolume:
+    def __call__(self, tensor):
+        means = tensor.mean(dim=[1, 2, 3], keepdims=True)
+        stds = tensor.std(dim=[1, 2, 3], keepdims=True)
+        tensor.sub_(means).div_(stds)
+        return tensor
+

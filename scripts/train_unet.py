@@ -22,7 +22,8 @@ images_transformations = trfs.Compose([transformations.NiftiOrderTransformation(
                                        trfs.Lambda(lambda x: torch.from_numpy(x)),
                                        trfs.Lambda(
                                            lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
-                                       trfs.Lambda(lambda x: F.interpolate(x, size=192))
+                                       trfs.Lambda(lambda x: F.interpolate(x, size=192)),
+                                       transformations.NormalizeVolume()
                                        ])
 masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                       transformations.NiftiOrderTransformation(),
