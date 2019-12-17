@@ -19,12 +19,6 @@ class TestDiceLossOneClass:
         target = torch.ones(*BATCH_DIMS)
         assert np.isclose(DiceLossOneClass()(images, target), 1, atol=1.e-4)
 
-    def test_if_raises_on_non_binarized_input(self):
-        images = torch.ones(*BATCH_DIMS) * 0.5
-        target = torch.ones(*BATCH_DIMS)
-        with pytest.raises(AssertionError):
-            DiceLossOneClass()(images, target)
-
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
                                torch.tensor([[1, 1, 0, 1]]), 0.6),
