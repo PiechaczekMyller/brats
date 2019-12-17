@@ -1,3 +1,5 @@
+import torch
+
 import numpy as np
 
 CHANNELS_IDX = 3
@@ -7,6 +9,7 @@ class HistogramMatchingTransformation:
     """
     Transformation performing histogram matching of volumes
     """
+
     def __init__(self, template: np.ndarray):
         """
 
@@ -73,3 +76,36 @@ class HistogramMatchingTransformation:
                                     template_values)
         result[positive] = interp_t_values[bin_idx]
         return result
+
+
+class NiftiOrderTransformation:
+    """
+    Changes dimensions order from nifti (H,W,D,C) to torch convention (C,D,W,H).
+    I can be applied to both ``PIL Image`` or ``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if type(img) not in [np.ndarray, torch.Tensor]:
+            raise ValueError("img should be either np.ndarray or torch.Tensor")
+        if len(img.shape) != 4:
+            raise ValueError("img should have 4 dimensions (H,W,D,C)")
+        if isinstance(img, torch.Tensor):
+            transformed = img.permute(3, 2, 0, 1)
+        if isinstance(img, np.ndarray):
+            transformed = np.moveaxis(img, [0, 1, 2, 3], [3, 2, 1, 0])
+        return transformed
+
+
+class AdditionalDimensionTransform:
+    """
+    Adds additional channel dimension
+    I can be applied to``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if not isinstance(img, np.ndarray):
+            raise ValueError("img should be np.ndarray")
+        if len(img.shape) != 3:
+            raise ValueError("img should have 4 dimensions (H,W,D)")
+        transformed = np.expand_dims(img, 3)
+        return transformed
