@@ -96,7 +96,7 @@ class NiftiOrderTransformation:
         return transformed
 
 
-class AdditionalDimensionTransform:
+class AdditionalDimensionTransformation:
     """
     Adds additional channel dimension
     I can be applied to``numpy.ndarray``.
@@ -109,3 +109,16 @@ class AdditionalDimensionTransform:
             raise ValueError("img should have 4 dimensions (H,W,D)")
         transformed = np.expand_dims(img, 3)
         return transformed
+
+
+class BinarizationTransformation:
+    """
+    Adds additional channel dimension
+    I can be applied to``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if type(img) not in [np.ndarray, torch.Tensor]:
+            raise ValueError("img should be either np.ndarray or torch.Tensor")
+        img[img > 0] = 1
+        return img

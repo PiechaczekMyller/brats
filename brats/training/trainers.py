@@ -7,8 +7,7 @@ import abc
 from torch.utils import data
 from torch import optim
 from torch import nn
-from ML_utils import observers
-from ML_utils import runners, stop
+from brats.training import observers, runners, stop
 
 LogPoint = observers.TensorboardLogger.LogPoint
 DataToSave = observers.AfterEpochDataToSave

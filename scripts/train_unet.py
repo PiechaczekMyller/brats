@@ -26,6 +26,7 @@ images_transformations = trfs.Compose([transformations.NiftiOrderTransformation(
 masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                       transformations.NiftiOrderTransformation(),
                                       trfs.Lambda(lambda x: torch.from_numpy(x)),
+                                      transformations.BinarizationTransformation(),
                                       trfs.Lambda(
                                           lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x)])
 

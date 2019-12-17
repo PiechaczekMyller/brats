@@ -32,3 +32,16 @@ class NiftiFolder(data.Dataset):
             scan_array = self._transform(scan_array)
 
         return scan_array
+
+
+class CombinedDataset(data.Dataset):
+    def __init__(self, dataset1, dataset2):
+        assert len(dataset1) == len(dataset2)
+        self.dataset1 = dataset1
+        self.dataset2 = dataset2
+
+    def __len__(self):
+        return len(self.dataset1)
+
+    def __getitem__(self, item):
+        return self.dataset1[item], self.dataset2[item]

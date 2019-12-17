@@ -11,7 +11,7 @@ import torch
 from torch.utils import data
 from torch import optim
 from torch import nn
-from ML_utils import torch_utils, observers
+from brats.training import torch_utils, observers
 
 Criterion = nn.Module
 
@@ -61,7 +61,8 @@ class TrainingEpochRunner(EpochRunner):
     def run_epoch(self, model: nn.Module, data_loader: data.DataLoader, epoch: int):
         model.train(True)
         batch_losses = array.array('d', [])
-        pb = ProgressBar(math.ceil(float(len(data_loader.dataset)) / data_loader.batch_size), f"T({str(epoch).zfill(4)}):")
+        pb = ProgressBar(math.ceil(float(len(data_loader.dataset)) / data_loader.batch_size),
+                         f"T({str(epoch).zfill(4)}):")
         for input, target in data_loader:
             input = input.to(self._device)
             target = target.to(self._device)
@@ -87,7 +88,8 @@ class ValidationEpochRunner(EpochRunner, observers.Observable):
     def run_epoch(self, model: nn.Module, data_loader: data.DataLoader, epoch: int):
         model.train(False)
         batch_losses = array.array('d', [])
-        pb = ProgressBar(math.ceil(float(len(data_loader.dataset)) / data_loader.batch_size), f"V({str(epoch).zfill(4)}):")
+        pb = ProgressBar(math.ceil(float(len(data_loader.dataset)) / data_loader.batch_size),
+                         f"V({str(epoch).zfill(4)}):")
         with torch.no_grad():
             for input, target in data_loader:
                 input = input.to(self._device)
