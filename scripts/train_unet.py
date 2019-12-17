@@ -42,7 +42,7 @@ valid_set = datasets.CombinedDataset(valid_images_set, valid_mask_set)
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True)
 valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=1, shuffle=True)
 
-net = UNet3D(1, 1).float()
+net = UNet3D(1, 1).double()
 criterion = DiceLossOneClass()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
