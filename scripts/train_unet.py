@@ -7,6 +7,9 @@ from brats import transformations
 from brats.losses import DiceLossOneClass
 from brats.models import UNet3D
 from brats.data import datasets
+from brats.training.observers import TensorboardLogger, PyTorchWeightsSaver
+from brats.training.runners import TrainingEpochRunner, ValidationEpochRunner
+from brats.training.trainers import PyTorchTrainer
 
 train_images_path = fr"/Users/szymek/Documents/Task01_BrainTumour/small/train/images"
 train_masks_path = fr"/Users/szymek/Documents/Task01_BrainTumour/small/train/masks"
@@ -42,28 +45,11 @@ net = UNet3D(1, 1).float()
 criterion = DiceLossOneClass()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-for epoch in range(2):  # loop over the dataset multiple times
+train_runner = TrainingEpochRunner(optimizer, criterion)
+valid_runner = ValidationEpochRunner(criterion)
 
-    running_loss = 0.0
-    for i, data in enumerate(train_loader, 0):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data
-        inputs = inputs.float()
-        labels = labels.float()
+trainer = PyTorchTrainer(net, train_runner, valid_runner)
+trainer.add_observer(TensorboardLogger("./logs"))
+trainer.add_observer(PyTorchWeightsSaver("./logs"))
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
-
-        # forward + backward + optimize
-        outputs = net(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        # print statistics
-        running_loss += loss.item()
-        if i % 10 == 9:  # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 2000))
-            running_loss = 0.0
-print('Finished Training')
+trainer.perform_training(10, train_loader, valid_loader)
