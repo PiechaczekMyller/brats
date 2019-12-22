@@ -22,6 +22,7 @@ class UNet3DBlock(nn.Module):
     def forward(self, input):
         out = self.conv1(input)
         out = self.bn1(out)
+        out = self.act(out)
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.act(out)
