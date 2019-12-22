@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+from torch.nn import functional as F
 
 CHANNELS_IDX = 3
 
@@ -7,6 +9,7 @@ class HistogramMatchingTransformation:
     """
     Transformation performing histogram matching of volumes
     """
+
     def __init__(self, template: np.ndarray):
         """
 
@@ -73,3 +76,87 @@ class HistogramMatchingTransformation:
                                     template_values)
         result[positive] = interp_t_values[bin_idx]
         return result
+
+
+class NiftiOrderTransformation:
+    """
+    Changes dimensions order from nifti (H,W,D,C) to torch convention (C,D,W,H).
+    It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if type(img) not in [np.ndarray, torch.Tensor]:
+            raise ValueError("img should be either np.ndarray or torch.Tensor")
+        if len(img.shape) != 4:
+            raise ValueError("img should have 4 dimensions (H,W,D,C)")
+        if isinstance(img, torch.Tensor):
+            transformed = img.permute(3, 2, 0, 1)
+        if isinstance(img, np.ndarray):
+            transformed = np.moveaxis(img, [0, 1, 2, 3], [2, 3, 1, 0])
+        return transformed
+
+
+class AddChannelDimToMaskTransformation:
+    """
+    Adds additional channel dimension
+    It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if type(img) not in [np.ndarray, torch.Tensor]:
+            raise ValueError("img should be either np.ndarray or torch.Tensor")
+        if len(img.shape) != 3:
+            raise ValueError("img should have 3 dimensions (H,W,D)")
+        if isinstance(img, torch.Tensor):
+            transformed = torch.unsqueeze(img, 3)
+        if isinstance(img, np.ndarray):
+            transformed = np.expand_dims(img, 3)
+        return transformed
+
+
+class BinarizationTransformation:
+    """
+    Adds additional channel dimension
+    I can be applied to``numpy.ndarray``.
+    """
+
+    def __call__(self, img):
+        if type(img) not in [np.ndarray, torch.Tensor]:
+            raise ValueError("img should be either np.ndarray or torch.Tensor")
+        img[img > 0] = 1
+        return img
+
+
+class ResizeVolumeTransformation:
+    """
+    Resizes the volume spatial dimensions (H,W) to the given size.
+    For detail, see nn.functional.interpolate, this class is only
+    """
+
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, tensor):
+        if not isinstance(tensor, torch.Tensor):
+            raise ValueError("img should be torch.Tensor")
+        if len(tensor.shape) != 4:
+            raise ValueError("img should have 4 dimensions (D,C,H,W)")
+        out = F.interpolate(tensor, size=self.size)  # The resize operation on tensor.
+        return out
+
+
+class StandardizeVolume:
+    """
+    Performs standardization on the volume
+    (mean -> 0, std -> 1 with standard metrics)
+    Standardization is done on the volumetric dimensions,
+    if multiple channels are given, standardization is done channel-wise.
+    """
+
+    def __call__(self, tensor):
+        if not isinstance(tensor, torch.Tensor):
+            raise ValueError("img should be torch.Tensor")
+        means = tensor.mean(dim=[1, 2, 3], keepdims=True)
+        stds = tensor.std(dim=[1, 2, 3], keepdims=True)
+        tensor.sub_(means).div_(stds)
+        return tensor
