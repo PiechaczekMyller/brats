@@ -5,24 +5,26 @@ from torch import nn
 class UNet3DBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv1 = nn.Conv3d(
-            in_channels=in_channels,
-            out_channels=out_channels,
-            kernel_size=3,
-            padding=1,
-            bias=False
-        )
-        self.conv2 = nn.Conv3d(
-            in_channels=out_channels,
-            out_channels=out_channels,
-            kernel_size=3,
-            padding=1,
-            bias=False
-        )
+        self.conv1 = nn.Conv3d(in_channels=in_channels,
+                               out_channels=out_channels,
+                               kernel_size=3,
+                               padding=1,
+                               bias=False)
+        self.bn1 = nn.BatchNorm3d(out_channels)
+        self.conv2 = nn.Conv3d(in_channels=out_channels,
+                               out_channels=out_channels,
+                               kernel_size=3,
+                               padding=1,
+                               bias=False)
+        self.bn2 = nn.BatchNorm3d(out_channels)
+        self.act = nn.PReLU()
 
     def forward(self, input):
         out = self.conv1(input)
+        out = self.bn1(out)
         out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.act(out)
         return out
 
 
