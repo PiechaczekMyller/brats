@@ -81,18 +81,7 @@ class TestNiftiOrderTransformation:
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.NiftiOrderTransformation()
-        with pytest.raises(ValueError):
-            transformation(input)
-
-    @pytest.mark.parametrize("input",
-                             [Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8)),
-                              None,
-                              8,
-                              [[[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]]
-                              ])
-    def test_if_raises_on_incorrect_type(self, input):
-        transformation = trfs.NiftiOrderTransformation()
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             transformation(input)
 
 
@@ -121,18 +110,7 @@ class TestAddChannelDimToMaskTransformation:
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.AddChannelDimToMaskTransformation()
-        with pytest.raises(ValueError):
-            transformation(input)
-
-    @pytest.mark.parametrize("input",
-                             [Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8)),
-                              None,
-                              8,
-                              [[[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]]
-                              ])
-    def test_if_raises_on_incorrect_type(self, input):
-        transformation = trfs.AddChannelDimToMaskTransformation()
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             transformation(input)
 
 
@@ -156,17 +134,6 @@ class TestBinarizationTransformation:
         out = transformation(input)
         assert np.all(np.array_equal(np.unique(out),
                                      np.array([0., 1.])))
-
-    @pytest.mark.parametrize("input",
-                             [Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8)),
-                              None,
-                              8,
-                              [[[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]]
-                              ])
-    def test_if_raises_on_incorrect_type(self, input):
-        transformation = trfs.AddChannelDimToMaskTransformation()
-        with pytest.raises(ValueError):
-            transformation(input)
 
 
 class TestResizeVolumeTransformation:
@@ -203,19 +170,7 @@ class TestResizeVolumeTransformation:
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.ResizeVolumeTransformation(2)
-        with pytest.raises(ValueError):
-            transformation(input)
-
-    @pytest.mark.parametrize("input",
-                             [Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8)),
-                              np.zeros((10, 10, 3)),
-                              None,
-                              8,
-                              [[[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]]
-                              ])
-    def test_if_raises_on_incorrect_type(self, input):
-        transformation = trfs.NiftiOrderTransformation()
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             transformation(input)
 
 
@@ -226,15 +181,3 @@ class TestStandardizeVolume:
         out = transformation(input)
         assert float(out.mean()) == pytest.approx(0, abs=0.001)
         assert float(out.std()) == pytest.approx(1, abs=0.001)
-
-    @pytest.mark.parametrize("input",
-                             [Image.fromarray(np.zeros((10, 10, 3), dtype=np.uint8)),
-                              np.zeros((3, 10, 10, 10)),
-                              None,
-                              8,
-                              [[[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]]
-                              ])
-    def test_if_raises_on_incorrect_type(self, input):
-        transformation = trfs.AddChannelDimToMaskTransformation()
-        with pytest.raises(ValueError):
-            transformation(input)

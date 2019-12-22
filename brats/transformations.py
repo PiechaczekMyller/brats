@@ -1,3 +1,5 @@
+import typing
+
 import numpy as np
 import torch
 from torch.nn import functional as F
@@ -84,11 +86,9 @@ class NiftiOrderTransformation:
     It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
     """
 
-    def __call__(self, img):
-        if type(img) not in [np.ndarray, torch.Tensor]:
-            raise ValueError("img should be either np.ndarray or torch.Tensor")
-        if len(img.shape) != 4:
-            raise ValueError("img should have 4 dimensions (H,W,D,C)")
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
+        assert len(img.shape) == 4
+
         if isinstance(img, torch.Tensor):
             transformed = img.permute(3, 2, 0, 1)
         if isinstance(img, np.ndarray):
@@ -102,11 +102,9 @@ class AddChannelDimToMaskTransformation:
     It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
     """
 
-    def __call__(self, img):
-        if type(img) not in [np.ndarray, torch.Tensor]:
-            raise ValueError("img should be either np.ndarray or torch.Tensor")
-        if len(img.shape) != 3:
-            raise ValueError("img should have 3 dimensions (H,W,D)")
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
+        assert len(img.shape) == 3
+
         if isinstance(img, torch.Tensor):
             transformed = torch.unsqueeze(img, 3)
         if isinstance(img, np.ndarray):
@@ -117,12 +115,10 @@ class AddChannelDimToMaskTransformation:
 class BinarizationTransformation:
     """
     Adds additional channel dimension
-    I can be applied to``numpy.ndarray``.
+    It can be applied to``numpy.ndarray``.
     """
 
-    def __call__(self, img):
-        if type(img) not in [np.ndarray, torch.Tensor]:
-            raise ValueError("img should be either np.ndarray or torch.Tensor")
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
         img[img > 0] = 1
         return img
 
@@ -133,14 +129,12 @@ class ResizeVolumeTransformation:
     For detail, see nn.functional.interpolate, this class is only
     """
 
-    def __init__(self, size):
+    def __init__(self, size: typing.Union[int, tuple]):
         self.size = size
 
-    def __call__(self, tensor):
-        if not isinstance(tensor, torch.Tensor):
-            raise ValueError("img should be torch.Tensor")
-        if len(tensor.shape) != 4:
-            raise ValueError("img should have 4 dimensions (D,C,H,W)")
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        assert len(tensor.shape) == 4
+
         out = F.interpolate(tensor, size=self.size)  # The resize operation on tensor.
         return out
 
@@ -153,10 +147,8 @@ class StandardizeVolume:
     if multiple channels are given, standardization is done channel-wise.
     """
 
-    def __call__(self, tensor):
-        if not isinstance(tensor, torch.Tensor):
-            raise ValueError("img should be torch.Tensor")
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         means = tensor.mean(dim=[1, 2, 3], keepdims=True)
         stds = tensor.std(dim=[1, 2, 3], keepdims=True)
-        tensor.sub_(means).div_(stds)
-        return tensor
+        transformed = (tensor - means) / stds
+        return transformed
