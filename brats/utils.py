@@ -1,5 +1,19 @@
 import torch
 
+ZERO_AND_ONE = torch.tensor([0., 1.])
+
+
+def is_binary(input: torch.Tensor) -> bool:
+    """
+    Check whether the input contains only 0s and/or 1s
+    Args:
+        input: Tensor to check
+    Returns:
+        bool: True if contains only 0s and/or 1s, False otherwise
+
+    """
+    return all([value in ZERO_AND_ONE for value in torch.unique(input)])
+
 
 def calculate_intersection(x1: torch.Tensor, x2: torch.Tensor,
                            dim=None) -> torch.Tensor:
@@ -23,10 +37,40 @@ def calculate_union(x1: torch.Tensor, x2: torch.Tensor,
     Args:
         x1: First tensor
         x2: Second tensor
-        dim: Dimensions along which the intersection will be summed
+        dim: Dimensions along which the union will be summed
     Returns:
         torch.Tensor: Tensor containing the union. Dimensionality may
             differ, depending on the dim argument
     """
     return x1.sum(dim=dim) + x2.sum(dim=dim) if dim is not None \
         else x1.sum() + x2.sum()
+
+
+def calculate_false_negatives(prediction: torch.Tensor, target: torch.Tensor,
+                              dim=None) -> torch.Tensor:
+    """
+    Calculate false negatives
+    Args:
+        prediction: Network output.
+        target: Target values.
+        dim: Dimensions along which the FNs will be summed.
+    Returns:
+        torch.Tensor: Number of false negatives
+    """
+    return (target * (1 - prediction)).sum(dim=sum) if dim is not None else (
+            target * (1 - prediction)).sum()
+
+
+def calculate_false_positives(prediction: torch.Tensor, target: torch.Tensor,
+                              dim=None) -> torch.Tensor:
+    """
+    Calculate false positives
+    Args:
+        prediction: Network output.
+        target: Target values.
+        dim: Dimensions along which the FPs will be summed.
+    Returns:
+        torch.Tensor: Number of false positives
+    """
+    return ((1 - target) * prediction).sum(dim=dim) if dim is not None else (
+                (1 - target) * prediction).sum()

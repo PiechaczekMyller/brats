@@ -1,6 +1,6 @@
 import torch
 
-from brats.utils import calculate_intersection, calculate_union
+import brats.utils as utils
 
 CHANNELS_DIM = 1
 ONE_CLASS = 1
@@ -21,10 +21,75 @@ def dice_score_one_class(prediction: torch.Tensor, target: torch.Tensor,
         torch.Tensor: DICE score for each element in the batch
     """
     assert prediction.shape[CHANNELS_DIM] == ONE_CLASS and \
-               target.shape[CHANNELS_DIM] == ONE_CLASS
+           target.shape[CHANNELS_DIM] == ONE_CLASS
     all_but_batch_dims = list(range(1, target.dim()))
-    intersection = calculate_intersection(prediction, target,
-                                          dim=all_but_batch_dims)
-    union = calculate_union(prediction, target, dim=all_but_batch_dims)
+    intersection = utils.calculate_intersection(prediction, target,
+                                                dim=all_but_batch_dims)
+    union = utils.calculate_union(prediction, target, dim=all_but_batch_dims)
     score = (2. * intersection) / (union + epsilon)
     return score
+
+
+def recall_score(prediction: torch.Tensor, target: torch.Tensor,
+                 epsilon: float = 1e-6) -> torch.Tensor:
+    """
+    Compute the recall score
+    Args:
+        prediction: Network output.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        target: Target values.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        epsilon: Smooth factor to prevent division by 0.
+    Returns:
+        torch.Tensor: Recall score for each element in the batch
+    """
+    assert utils.is_binary(prediction), "Predictions must be binary"
+    assert utils.is_binary(target), "Target must be binary"
+    all_but_batch_dims = list(range(1, target.dim()))
+    true_positives = utils.calculate_intersection(prediction, target,
+                                                  dim=all_but_batch_dims)
+    false_negatives = utils.calculate_false_negatives(prediction, target,
+                                                      dim=all_but_batch_dims)
+    return true_positives / (true_positives + false_negatives + epsilon)
+
+
+def precision_score(prediction: torch.Tensor, target: torch.Tensor,
+                    epsilon: float = 1e-6) -> torch.Tensor:
+    """
+    Compute the precision score
+    Args:
+        prediction: Network output.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        target: Target values.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        epsilon: Smooth factor to prevent division by 0.
+    Returns:
+        torch.Tensor: Precision score for each element in the batch
+    """
+    assert utils.is_binary(prediction), "Predictions must be binary"
+    assert utils.is_binary(target), "Target must be binary"
+    all_but_batch_dims = list(range(1, target.dim()))
+    true_positives = utils.calculate_intersection(prediction, target,
+                                                  dim=all_but_batch_dims)
+    false_positive = utils.calculate_false_positives(prediction, target)
+    return true_positives / (true_positives + false_positive + epsilon)
+
+
+def f_score(prediction: torch.Tensor, target: torch.Tensor, beta: float,
+            epsilon: float = 1e-6) -> torch.Tensor:
+    """
+    Compute the F score
+    Args:
+        prediction: Network output.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        target: Target values.
+            Dimensions - (Batch, Class, Depth, Height, Width)
+        beta: Weight parameter between precision and recall
+        epsilon: Smooth factor to prevent division by 0.
+    Returns:
+        torch.Tensor: F Score value for each element in the batch
+    """
+    precision = precision_score(prediction, target)
+    recall = recall_score(prediction, target)
+    return (1 + beta ** 2) * ((precision * recall) / (
+                beta ** 2 * precision + recall + epsilon))
