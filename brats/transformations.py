@@ -83,7 +83,7 @@ class HistogramMatchingTransformation:
 
 @singledispatch
 def reorder(img: typing.Any):
-    return TypeError("Img should be either np.ndarray of torch.Tensor")
+    raise TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @reorder.register(np.ndarray)
@@ -112,7 +112,7 @@ class NiftiToTorchDimensionsReorderTransformation:
 
 @singledispatch
 def add_channel_dim(img: typing.Any):
-    return TypeError("Img should be either np.ndarray of torch.Tensor")
+    raise TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @add_channel_dim.register(np.ndarray)
