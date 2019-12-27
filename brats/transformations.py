@@ -179,7 +179,7 @@ class ResizeVolumeTransformation:
         self.size = size
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
-        assert tensor.ndimension() == 4, "Tensor should have 4 dimensions (C,D,H,W)"
+        assert tensor.ndim == 4, "Tensor should have 4 dimensions (C,D,H,W)"
 
         out = F.interpolate(tensor, size=self.size)  # The resize operation on tensor.
         return out
