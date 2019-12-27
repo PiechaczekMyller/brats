@@ -140,12 +140,12 @@ class AddChannelDimToMaskTransformation:
 
 @singledispatch
 def binarize(img: typing.Any):
-    return TypeError("Img should be either np.ndarray of torch.Tensor")
+    raise TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @binarize.register(np.ndarray)
 def _(img: np.ndarray) -> np.ndarray:
-    transformed = img.copy()
+    transformed = np.copy(img)
     transformed[transformed > 0] = 1
     return transformed
 
@@ -173,7 +173,7 @@ class ResizeVolumeTransformation:
     For details, see nn.functional.interpolate.
     """
 
-    def __init__(self, size: typing.Union[int, tuple]):
+    def __init__(self, size: typing.Union[int, typing.Tuple[int, int]]):
         self.size = size
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
