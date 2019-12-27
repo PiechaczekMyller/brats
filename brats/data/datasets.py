@@ -44,7 +44,7 @@ class CombinedDataset(data.Dataset):
         assert all(len(dataset) == len(datasets[0]) for dataset in datasets), "Length of both datasets must match"
         self.datasets = datasets
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.datasets[0])
 
     def __getitem__(self, idx: int) -> typing.Tuple[typing.Any, ...]:
