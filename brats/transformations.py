@@ -152,7 +152,7 @@ def _(img: np.ndarray) -> np.ndarray:
 
 @binarize.register(torch.Tensor)
 def _(img: torch.Tensor) -> torch.Tensor:
-    transformed = img.clone().detach()
+    transformed = img.clone()
     transformed[transformed > 0] = 1
     return transformed
 
