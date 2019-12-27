@@ -2,7 +2,6 @@ import torch
 
 import pytest
 import numpy as np
-from PIL import Image
 from brats import transformations as trfs
 
 INPUT_VOLUME_SHAPE_4D = (10, 10, 10, 3)
@@ -73,11 +72,11 @@ class TestNiftiOrderTransformation:
                              [torch.zeros((1, 2, 3, 4, 5)),
                               torch.zeros((1, 2, 3)),
                               torch.zeros((1, 2)),
-                              torch.zeros((1)),
+                              torch.zeros(1),
                               np.zeros((1, 2, 3, 4, 5)),
                               np.zeros((1, 2, 3)),
                               np.zeros((1, 2)),
-                              np.zeros((1))
+                              np.zeros(1)
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.NiftiOrderTransformation()
@@ -89,7 +88,7 @@ class TestAddChannelDimToMaskTransformation:
     def test_if_returns_correct_tensors(self):
         transformation = trfs.AddChannelDimToMaskTransformation()
         input = torch.zeros([4, 5, 6])
-        expected = torch.zeros([4, 5, 6, 1])
+        expected = torch.zeros([1, 4, 5, 6])
         assert transformation(input).shape == expected.shape
 
     def test_if_returns_correct_ndarray(self):
@@ -102,11 +101,11 @@ class TestAddChannelDimToMaskTransformation:
                              [torch.zeros((1, 2, 3, 4, 5)),
                               torch.zeros((1, 2, 3, 4)),
                               torch.zeros((1, 2)),
-                              torch.zeros((1)),
+                              torch.zeros(1),
                               np.zeros((1, 2, 3, 4, 5)),
                               np.zeros((1, 2, 3, 4)),
                               np.zeros((1, 2)),
-                              np.zeros((1))
+                              np.zeros(1)
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.AddChannelDimToMaskTransformation()
@@ -162,12 +161,7 @@ class TestResizeVolumeTransformation:
                              [torch.zeros((1, 2, 3, 4, 5)),
                               torch.zeros((1, 2, 3)),
                               torch.zeros((1, 2)),
-                              torch.zeros((1)),
-                              np.zeros((1, 2, 3, 4, 5)),
-                              np.zeros((1, 2, 3)),
-                              np.zeros((1, 2)),
-                              np.zeros((1))
-                              ])
+                              torch.zeros(1)])
     def test_if_raises_on_incorrect_shape(self, input):
         transformation = trfs.ResizeVolumeTransformation(2)
         with pytest.raises(AssertionError):

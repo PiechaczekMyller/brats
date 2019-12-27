@@ -1,5 +1,6 @@
 import typing
-
+from copy import deepcopy
+from functools import singledispatch
 import numpy as np
 import torch
 from torch.nn import functional as F
@@ -80,60 +81,105 @@ class HistogramMatchingTransformation:
         return result
 
 
+@singledispatch
+def reorder(img: typing.Any):
+    return NotImplemented
+
+
+@reorder.register(np.ndarray)
+def _(img: np.ndarray) -> np.ndarray:
+    transformed = np.moveaxis(img, [0, 1, 2, 3], [2, 3, 1, 0])
+    return transformed
+
+
+@reorder.register(torch.Tensor)
+def _(img: torch.Tensor) -> torch.Tensor:
+    transformed = img.permute(3, 2, 0, 1)
+    return transformed
+
+
 class NiftiOrderTransformation:
     """
-    Changes dimensions order from nifti (H,W,D,C) to torch convention (C,D,W,H).
-    It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
+    Changes dimensions order from nifti (H,W,D,C) to torch convention (C,D,H,W).
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        assert len(img.shape) == 4
+        assert len(img.shape) == 4, "Tensor should have 4 dimensions (H,W,D,C)"
 
-        if isinstance(img, torch.Tensor):
-            transformed = img.permute(3, 2, 0, 1)
-        if isinstance(img, np.ndarray):
-            transformed = np.moveaxis(img, [0, 1, 2, 3], [2, 3, 1, 0])
+        transformed = reorder(img)
         return transformed
+
+
+@singledispatch
+def add_channel_dim(img: typing.Any):
+    return NotImplemented
+
+
+@add_channel_dim.register(np.ndarray)
+def _(img: np.ndarray) -> np.ndarray:
+    transformed = np.expand_dims(img, 3)
+    return transformed
+
+
+@add_channel_dim.register(torch.Tensor)
+def _(img: torch.Tensor) -> torch.Tensor:
+    transformed = torch.unsqueeze(img, 0)
+    return transformed
 
 
 class AddChannelDimToMaskTransformation:
     """
     Adds additional channel dimension
-    It can be applied to both ``torch.Tensor`` or ``numpy.ndarray``.
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        assert len(img.shape) == 3
-
-        if isinstance(img, torch.Tensor):
-            transformed = torch.unsqueeze(img, 3)
-        if isinstance(img, np.ndarray):
-            transformed = np.expand_dims(img, 3)
+        assert img.ndim == 3, "Img should have 3 dimensions (D,H,W)"
+        transformed = add_channel_dim(img)
         return transformed
+
+
+@singledispatch
+def binarize(img: typing.Any):
+    transformed = deepcopy(img)
+    transformed[transformed > 0] = 1
+    return NotImplemented
+
+
+@binarize.register(np.ndarray)
+def _(img: np.ndarray) -> np.ndarray:
+    transformed = img.copy()
+    transformed[transformed > 0] = 1
+    return transformed
+
+
+@binarize.register(torch.Tensor)
+def _(img: torch.Tensor) -> torch.Tensor:
+    transformed = img.clone().detach()
+    transformed[transformed > 0] = 1
+    return transformed
 
 
 class BinarizationTransformation:
     """
-    Adds additional channel dimension
-    It can be applied to``numpy.ndarray``.
+    Changes image to binary mask, all values above 1 would be changed to 1.
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        img[img > 0] = 1
-        return img
+        transformed = binarize(img)
+        return transformed
 
 
 class ResizeVolumeTransformation:
     """
     Resizes the volume spatial dimensions (H,W) to the given size.
-    For detail, see nn.functional.interpolate, this class is only
+    For details, see nn.functional.interpolate.
     """
 
     def __init__(self, size: typing.Union[int, tuple]):
         self.size = size
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
-        assert len(tensor.shape) == 4
+        assert tensor.ndimension() == 4, "Tensor should have 4 dimensions (C,D,H,W)"
 
         out = F.interpolate(tensor, size=self.size)  # The resize operation on tensor.
         return out
