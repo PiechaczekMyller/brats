@@ -98,7 +98,7 @@ def _(img: torch.Tensor) -> torch.Tensor:
     return transformed
 
 
-class NiftiOrderTransformation:
+class NiftiToTorchDimensionsReorderTransformation:
     """
     Changes dimensions order from nifti (H,W,D,C) to torch convention (C,D,H,W).
     """

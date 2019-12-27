@@ -55,15 +55,15 @@ class TestHistogramMatchingTransformation:
         assert np.all(transformation(image) == result)
 
 
-class TestNiftiOrderTransformation:
+class TestNiftiToTorchDimensionsReorderTransformation:
     def test_if_returns_correct_tensors(self):
-        transformation = trfs.NiftiOrderTransformation()
+        transformation = trfs.NiftiToTorchDimensionsReorderTransformation()
         input = torch.zeros([4, 5, 10, 3])
         expected = torch.zeros([3, 10, 4, 5])
         assert transformation(input).shape == expected.shape
 
     def test_if_returns_correct_ndarray(self):
-        transformation = trfs.NiftiOrderTransformation()
+        transformation = trfs.NiftiToTorchDimensionsReorderTransformation()
         input = np.zeros([4, 5, 10, 3])
         expected = np.zeros([3, 10, 4, 5])
         assert transformation(input).shape == expected.shape
@@ -79,7 +79,7 @@ class TestNiftiOrderTransformation:
                               np.zeros(1)
                               ])
     def test_if_raises_on_incorrect_shape(self, input):
-        transformation = trfs.NiftiOrderTransformation()
+        transformation = trfs.NiftiToTorchDimensionsReorderTransformation()
         with pytest.raises(AssertionError):
             transformation(input)
 
