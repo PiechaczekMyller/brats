@@ -83,7 +83,7 @@ class HistogramMatchingTransformation:
 
 @singledispatch
 def reorder(img: typing.Any):
-    return NotImplemented
+    return TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @reorder.register(np.ndarray)
@@ -112,7 +112,7 @@ class NiftiToTorchDimensionsReorderTransformation:
 
 @singledispatch
 def add_channel_dim(img: typing.Any):
-    return NotImplemented
+    return TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @add_channel_dim.register(np.ndarray)
@@ -140,9 +140,7 @@ class AddChannelDimToMaskTransformation:
 
 @singledispatch
 def binarize(img: typing.Any):
-    transformed = deepcopy(img)
-    transformed[transformed > 0] = 1
-    return NotImplemented
+    return TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @binarize.register(np.ndarray)
