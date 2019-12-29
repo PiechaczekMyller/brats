@@ -23,7 +23,7 @@ def score_function(engine):
     return 1 - dice_loss
 
 
-def get_volumes_transformations(input_size):
+def get_volumes_transformations(input_size, device):
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: x[3, :, :, :]),
                                             trfs.Lambda(lambda x: np.expand_dims(x, 0)),
@@ -31,19 +31,21 @@ def get_volumes_transformations(input_size):
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                             transformations.ResizeVolumeTransformation(input_size),
-                                            transformations.StandardizeVolume()
+                                            transformations.StandardizeVolume(),
+                                            trfs.Lambda(lambda x: x.to(device))
                                             ])
     return volumes_transformations
 
 
-def get_masks_transformations(input_size):
+def get_masks_transformations(input_size, device):
     masks_transformations = trfs.Compose([transformations.AddChannelDimToMaskTransformation(),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
                                           transformations.BinarizationTransformation(),
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
-                                          transformations.ResizeVolumeTransformation(input_size)
+                                          transformations.ResizeVolumeTransformation(input_size),
+                                          trfs.Lambda(lambda x: x.to(device))
                                           ])
     return masks_transformations
 
@@ -114,11 +116,11 @@ def attach_early_stopping(engine, patience, score_function):
 
 def create_parser():
     parser = argparse.ArgumentParser(description='Train UNet 3D.')
-    parser.add_argument('--volumes_path', type=str,required=True)
-    parser.add_argument('--masks_path', type=str,required=True)
-    parser.add_argument('--log_dir', type=str,required=True)
-    parser.add_argument('--device', type=str,required=True)
-    parser.add_argument('--epochs', type=int,required=True)
+    parser.add_argument('--volumes_path', type=str, required=True)
+    parser.add_argument('--masks_path', type=str, required=True)
+    parser.add_argument('--log_dir', type=str, required=True)
+    parser.add_argument('--device', type=str, required=True)
+    parser.add_argument('--epochs', type=int, required=True)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--patience', type=int, default=10)
     parser.add_argument('--in_channels', type=int, default=1)
@@ -151,8 +153,8 @@ if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
 
-    volumes_transformations = get_volumes_transformations(args.input_size)
-    masks_transformations = get_masks_transformations(args.input_size)
+    volumes_transformations = get_volumes_transformations(args.input_size, args.device)
+    masks_transformations = get_masks_transformations(args.input_size, args.device)
 
     train_set, valid_set = get_sets(args.volumes_path, args.masks_path, volumes_transformations, masks_transformations)
 
@@ -160,6 +162,7 @@ if __name__ == '__main__':
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
 
     model = UNet3D(args.in_channels, args.out_channels).double()
+    model.to(args.device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
