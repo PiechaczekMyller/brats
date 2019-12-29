@@ -1,11 +1,11 @@
 import argparse
 import os
 
-from ignite.contrib.handlers import TensorboardLogger, ProgressBar
+import numpy as np
+import torch
+from ignite.contrib.handlers import TensorboardLogger, ProgressBar, global_step_from_engine
 from ignite.contrib.handlers.tensorboard_logger import OutputHandler
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-import torch
-import numpy as np
 from ignite.handlers import ModelCheckpoint, EarlyStopping
 from ignite.metrics import Loss
 from torch import optim
@@ -64,13 +64,13 @@ def attach_tensorboard(log_dir, train_evaluator, validation_evaluator, trainer):
     tb_logger.attach(train_evaluator,
                      log_handler=OutputHandler(tag="training",
                                                metric_names=["dice_loss"],
-                                               another_engine=trainer),
+                                               global_step_transform=global_step_from_engine(trainer)),
                      event_name=Events.EPOCH_COMPLETED)
 
     tb_logger.attach(validation_evaluator,
                      log_handler=OutputHandler(tag="validation",
                                                metric_names=["dice_loss"],
-                                               another_engine=trainer),
+                                               global_step_transform=global_step_from_engine(trainer)),
                      event_name=Events.EPOCH_COMPLETED)
 
 
