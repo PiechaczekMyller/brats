@@ -37,7 +37,8 @@ class NiftiFolder(data.Dataset):
 
 class CombinedDataset(data.Dataset):
     """
-    Takes two datasets of the same length and combines them,
+    Takes multiple datasets of the same length and combines them.
+    On `__getitem__(n)` it returns a tuple containing nth element of each dataset.
     """
 
     def __init__(self, *datasets: data.Dataset):
