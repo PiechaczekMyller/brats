@@ -42,7 +42,7 @@ class CombinedDataset(data.Dataset):
     """
 
     def __init__(self, *datasets: data.Dataset):
-        assert all(len(dataset) == len(datasets[0]) for dataset in datasets), "Length of both datasets must match"
+        assert all(len(dataset) == len(datasets[0]) for dataset in datasets), "Length of all datasets must be the same"
         self.datasets = datasets
 
     def __len__(self) -> int:
