@@ -57,7 +57,7 @@ def calculate_false_negatives(prediction: torch.Tensor, target: torch.Tensor,
     Returns:
         torch.Tensor: Number of false negatives
     """
-    return (target * (1 - prediction)).sum(dim=sum) if dim is not None else (
+    return (target * (1 - prediction)).sum(dim=dim) if dim is not None else (
             target * (1 - prediction)).sum()
 
 
@@ -73,4 +73,4 @@ def calculate_false_positives(prediction: torch.Tensor, target: torch.Tensor,
         torch.Tensor: Number of false positives
     """
     return ((1 - target) * prediction).sum(dim=dim) if dim is not None else (
-                (1 - target) * prediction).sum()
+            (1 - target) * prediction).sum()
