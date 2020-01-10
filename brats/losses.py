@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from brats.metrics import dice_score_one_class
+from brats.metrics import DiceScoreOneClass
 
 ONE_CLASS = 1
 
@@ -19,6 +19,7 @@ class DiceLossOneClass(nn.Module):
         """
         super().__init__()
         self.epsilon = epsilon
+        self.dice_score = DiceScoreOneClass()
 
     def __call__(self, prediction: torch.Tensor,
                  target: torch.Tensor) -> torch.Tensor:
@@ -32,5 +33,4 @@ class DiceLossOneClass(nn.Module):
         Returns:
             torch.Tensor: Computed Dice Loss
         """
-        loss = 1 - dice_score_one_class(prediction, target)
-        return torch.mean(loss)
+        return 1 - self.dice_score(prediction, target)

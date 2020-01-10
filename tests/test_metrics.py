@@ -9,17 +9,17 @@ CHANNEL_DIM = 1
 
 
 class TestDiceScoreOneClass:
+    metric = metrics.DiceScoreOneClass()
+
     def test_if_returns_1_for_perfect_fit(self):
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.dice_score_one_class(images, target), 1,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 1, atol=1.e-4)
 
     def test_if_returns_0_for_worst_fit(self):
         images = torch.zeros(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.dice_score_one_class(images, target), 0,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 0, atol=1.e-4)
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
@@ -33,25 +33,28 @@ class TestDiceScoreOneClass:
                                0.6667)
                               ])
     def test_if_returns_expected_values(self, images, target, result):
-        assert all(np.isclose(
-            metrics.dice_score_one_class(images.unsqueeze(dim=CHANNEL_DIM),
-                                         target.unsqueeze(dim=CHANNEL_DIM)),
-            result,
-            atol=1.e-3))
+        assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
+                                      target.unsqueeze(dim=CHANNEL_DIM)),
+                           result, atol=1.e-3)
+
+    def test_if_returns_tensor_with_shape_0(self):
+        images = torch.ones(*BATCH_DIMS)
+        target = torch.ones(*BATCH_DIMS)
+        assert self.metric(images, target).shape == torch.Size([])
 
 
 class TestRecallScore:
+    metric = metrics.RecallScore()
+
     def test_if_returns_1_for_perfect_fit(self):
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.recall_score(images, target), 1,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 1, atol=1.e-4)
 
     def test_if_returns_0_for_worst_fit(self):
         images = torch.zeros(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.recall_score(images, target), 0,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 0, atol=1.e-4)
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
@@ -66,25 +69,29 @@ class TestRecallScore:
                                0.6667)
                               ])
     def test_if_returns_expected_values(self, images, target, result):
-        assert all(np.isclose(
-            metrics.recall_score(images.unsqueeze(dim=CHANNEL_DIM),
-                                 target.unsqueeze(dim=CHANNEL_DIM)),
-            result,
-            atol=1.e-3))
+        assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
+                                      target.unsqueeze(dim=CHANNEL_DIM)),
+                          result,
+                          atol=1.e-3)
+
+    def test_if_returns_tensor_with_shape_0(self):
+        images = torch.ones(*BATCH_DIMS)
+        target = torch.ones(*BATCH_DIMS)
+        assert self.metric(images, target).shape == torch.Size([])
 
 
 class TestPrecisionScore:
+    metric = metrics.PrecisionScore()
+
     def test_if_returns_1_for_perfect_fit(self):
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.precision_score(images, target), 1,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 1, atol=1.e-4)
 
     def test_if_returns_0_for_worst_fit(self):
         images = torch.zeros(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.precision_score(images, target), 0,
-                              atol=1.e-4))
+        assert np.isclose(self.metric(images, target), 0, atol=1.e-4)
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
@@ -98,25 +105,30 @@ class TestPrecisionScore:
                                0.6667)
                               ])
     def test_if_returns_expected_values(self, images, target, result):
-        assert all(np.isclose(
-            metrics.precision_score(images.unsqueeze(dim=CHANNEL_DIM),
-                                    target.unsqueeze(dim=CHANNEL_DIM)),
-            result,
-            atol=1.e-3))
+        assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
+                                      target.unsqueeze(dim=CHANNEL_DIM)),
+                          result,
+                          atol=1.e-3)
+
+    def test_if_returns_tensor_with_shape_0(self):
+        images = torch.ones(*BATCH_DIMS)
+        target = torch.ones(*BATCH_DIMS)
+        assert self.metric(images, target).shape == torch.Size([])
 
 
 class TestFScore:
+    metric_beta1 = metrics.FScore(beta=1)
+    metric_beta2 = metrics.FScore(beta=2)
+
     def test_if_returns_1_for_perfect_fit(self):
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.f_score(images, target, beta=1), 1,
-                              atol=1.e-4))
+        assert np.isclose(self.metric_beta1(images, target), 1, atol=1.e-4)
 
     def test_if_returns_0_for_worst_fit(self):
         images = torch.zeros(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
-        assert all(np.isclose(metrics.f_score(images, target, beta=1), 0,
-                              atol=1.e-4))
+        assert np.isclose(self.metric_beta1(images, target), 0, atol=1.e-4)
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
@@ -130,11 +142,10 @@ class TestFScore:
                                0.6667)
                               ])
     def test_if_f1_returns_expected_values(self, images, target, result):
-        assert all(np.isclose(
-            metrics.f_score(images.unsqueeze(dim=CHANNEL_DIM),
-                            target.unsqueeze(dim=CHANNEL_DIM), beta=1),
-            result,
-            atol=1.e-3))
+        assert np.isclose(self.metric_beta1(images.unsqueeze(dim=CHANNEL_DIM),
+                                            target.unsqueeze(dim=CHANNEL_DIM)),
+                          result,
+                          atol=1.e-3)
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0, 1, 1, 0]]),
@@ -149,27 +160,38 @@ class TestFScore:
                                0.6667)
                               ])
     def test_if_f2_returns_expected_values(self, images, target, result):
-        assert all(np.isclose(
-            metrics.f_score(images.unsqueeze(dim=CHANNEL_DIM),
-                            target.unsqueeze(dim=CHANNEL_DIM), beta=2),
-            result,
-            atol=1.e-3))
+        assert np.isclose(self.metric_beta2(images.unsqueeze(dim=CHANNEL_DIM),
+                                            target.unsqueeze(dim=CHANNEL_DIM)),
+                          result,
+                          atol=1.e-3)
+
+    def test_if_returns_tensor_with_shape_0(self):
+        images = torch.ones(*BATCH_DIMS)
+        target = torch.ones(*BATCH_DIMS)
+        assert self.metric_beta1(images, target).shape == torch.Size([])
 
 
 class TestHausdorffDistance95:
-    @pytest.mark.parametrize("batch_size, result", [((2, 1, 3, 3, 3), (2, 3)),
-                                                    ((5, 1, 2, 2, 2), (5, 2)),
-                                                    ((1, 1, 1, 1, 1), (1, 1))])
-    def test_if_returns_correct_shapes(self, batch_size, result):
-        images = torch.ones(*batch_size)
-        target = torch.ones(*batch_size)
-        assert metrics.hausdorff_distance95(images, target).shape == result
+    metric = metrics.HausdorffDistance95()
 
-    @pytest.mark.parametrize("batch_size, result", [((2, 1, 3, 3, 3), (2, 3)),
-                                                    ((5, 1, 2, 2, 2), (5, 2)),
-                                                    ((1, 1, 1, 1, 1), (1, 1))])
-    def test_if_mean_max_returns_correct_shapes(self, batch_size, result):
-        images = torch.ones(*batch_size)
-        target = torch.ones(*batch_size)
-        assert len(metrics.hausdorff_distance95_mean_max(images, target)[0]) == \
-               result[0]
+    @pytest.mark.parametrize("images, target, result",
+                             [(torch.tensor([[0, 1, 1, 0]]),
+                               torch.tensor([[1, 1, 0, 1]]), 1),
+                              (torch.tensor([[1, 0, 0, 0]]),
+                               torch.tensor([[0, 0, 0, 1]]), 1.414),
+                              (torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0]]),
+                               torch.tensor([[0, 0, 1, 0], [0, 0, 0, 0]]),
+                               2),
+                              (torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0]]),
+                               torch.tensor([[0, 0, 0, 0], [0, 0, 0, 1]]),
+                               3.162)
+                              ])
+    def test_if_returns_correct_values(self, images, target, result):
+        images = images.view(1, 1, 1, 2, -1)
+        target = target.view(1, 1, 1, 2, -1)
+        assert np.isclose(self.metric(images, target), result, atol=1.e-3)
+
+    def test_if_returns_tensor_with_shape_0(self):
+        images = torch.ones(*BATCH_DIMS)
+        target = torch.ones(*BATCH_DIMS)
+        assert self.metric(images, target).shape == torch.Size([])
