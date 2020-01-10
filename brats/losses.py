@@ -33,5 +33,4 @@ class DiceLossOneClass(nn.Module):
         Returns:
             torch.Tensor: Computed Dice Loss
         """
-        loss = 1 - self.dice_score(prediction, target)
-        return torch.mean(loss)
+        return 1 - self.dice_score(prediction, target)
