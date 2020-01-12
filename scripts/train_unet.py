@@ -15,7 +15,9 @@ from torchvision import transforms as trfs
 from brats import transformations
 from brats.data import datasets
 from brats.losses import DiceLossOneClass
+from brats.metrics import RecallScore, PrecisionScore, HausdorffDistance95
 from brats.models import UNet3D
+from brats.utils import to_binary
 
 
 def score_function(engine):
@@ -53,7 +55,11 @@ def get_masks_transformations(input_size, device):
 
 
 def get_metrics():
-    return {'dice_loss': Loss(DiceLossOneClass())}
+    return {'dice_loss': Loss(DiceLossOneClass()),
+            'recall': Loss(RecallScore(), output_transform=to_binary),
+            'precision': Loss(PrecisionScore(), output_transform=to_binary),
+            "hausdorf": Loss(HausdorffDistance95())
+            }
 
 
 def attach_progress_bar(trainer):
@@ -138,10 +144,8 @@ def get_sets(volumes_path, masks_path, volumes_transformations, masks_transforma
     volumes_set = datasets.NiftiFolder(volumes_path, volumes_transformations)
     masks_set = datasets.NiftiFolder(masks_path, masks_transformations)
 
-    train_indeces = [1]
-    # train_indeces = list(range(0, int(len(volumes_set) * args.train_valid_ratio)))
-    # valid_indeces = list(range(int(len(volumes_set) * args.train_valid_ratio), len(volumes_set)))
-    valid_indeces = [2]
+    train_indeces = list(range(0, int(len(volumes_set) * args.train_valid_ratio)))
+    valid_indeces = list(range(int(len(volumes_set) * args.train_valid_ratio), len(volumes_set)))
 
     train_volumes_set = Subset(volumes_set, train_indeces)
     valid_volumes_set = Subset(volumes_set, valid_indeces)
