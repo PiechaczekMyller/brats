@@ -1,5 +1,6 @@
 import argparse
 import os
+import typing
 
 import numpy as np
 import torch
@@ -15,16 +16,8 @@ from torchvision import transforms as trfs
 from brats import transformations
 from brats.data import datasets
 from brats.losses import DiceLossOneClass
-from brats.metrics import RecallScore, PrecisionScore, HausdorffDistance95
+from brats.metrics import RecallScore, PrecisionScore, DiceScoreOneClass
 from brats.models import UNet3D
-from brats.utils import to_binary
-
-
-def score_function(engine):
-    dice_loss = engine.state.metrics['dice_loss']
-    dice_score = 1 - dice_loss
-    print(f" dice score:{dice_score}")
-    return dice_score
 
 
 def get_volumes_transformations(input_size, device):
@@ -55,10 +48,20 @@ def get_masks_transformations(input_size, device):
 
 
 def get_metrics():
+    def to_binary(input: typing.Tuple[torch.Tensor, torch.Tensor]) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        transformed = input[0].clone()
+        mask = input[1]
+        transformed[transformed >= 0.5] = 1
+        transformed[transformed < 0.5] = 0
+        return transformed, mask
+
+    def to_float(input: typing.Tuple[torch.Tensor, torch.Tensor]) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        return input[0].float(), input[1].float()
+
     return {'dice_loss': Loss(DiceLossOneClass()),
-            'recall': Loss(RecallScore(), output_transform=to_binary),
-            'precision': Loss(PrecisionScore(), output_transform=to_binary),
-            "hausdorf": Loss(HausdorffDistance95())
+            'dice_score': Loss(DiceScoreOneClass()),
+            'recall': Loss(RecallScore(), output_transform=lambda x: to_binary(to_float(x))),
+            'precision': Loss(PrecisionScore(), output_transform=lambda x: to_binary(to_float(x)))
             }
 
 
@@ -155,6 +158,10 @@ def get_sets(volumes_path, masks_path, volumes_transformations, masks_transforma
     train_set = datasets.CombinedDataset(train_volumes_set, train_masks_set)
     valid_set = datasets.CombinedDataset(valid_volumes_set, valid_masks_set)
     return train_set, valid_set
+
+
+def score_function(engine):
+    return engine.state.metrics['dice_score']
 
 
 if __name__ == '__main__':
