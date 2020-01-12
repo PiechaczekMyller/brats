@@ -63,13 +63,13 @@ def attach_tensorboard(log_dir, train_evaluator, validation_evaluator, trainer):
     tb_logger = TensorboardLogger(log_dir=os.path.join(log_dir, "tensorboard"), flush_secs=10)
     tb_logger.attach(train_evaluator,
                      log_handler=OutputHandler(tag="training",
-                                               metric_names=["dice_loss"],
+                                               metric_names=[key for key in get_metrics()],
                                                global_step_transform=global_step_from_engine(trainer)),
                      event_name=Events.EPOCH_COMPLETED)
 
     tb_logger.attach(validation_evaluator,
                      log_handler=OutputHandler(tag="validation",
-                                               metric_names=["dice_loss"],
+                                               metric_names=[key for key in get_metrics()],
                                                global_step_transform=global_step_from_engine(trainer)),
                      event_name=Events.EPOCH_COMPLETED)
 
