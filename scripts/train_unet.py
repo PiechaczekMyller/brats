@@ -20,7 +20,9 @@ from brats.models import UNet3D
 
 def score_function(engine):
     dice_loss = engine.state.metrics['dice_loss']
-    return 1 - dice_loss
+    dice_score = 1 - dice_loss
+    print(f" dice score:{dice_score}")
+    return dice_score
 
 
 def get_volumes_transformations(input_size, device):
@@ -109,9 +111,9 @@ def attach_best_checkpoint(engine, model, log_dir, score_function):
     engine.add_event_handler(Events.EPOCH_COMPLETED, best_model_checkpoint, {'unet3D': model})
 
 
-def attach_early_stopping(engine, patience, score_function):
-    early_stoping = EarlyStopping(patience, score_function, engine)
-    engine.add_event_handler(Events.COMPLETED, early_stoping)
+def attach_early_stopping(evaluator, trainer, patience, score_function):
+    early_stoping = EarlyStopping(patience, score_function, trainer)
+    evaluator.add_event_handler(Events.COMPLETED, early_stoping)
 
 
 def create_parser():
@@ -200,6 +202,6 @@ if __name__ == '__main__':
     attach_tensorboard(args.log_dir, train_evaluator, validation_evaluator, trainer)
     attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=args.epochs)
     attach_best_checkpoint(validation_evaluator, model, args.log_dir, score_function=score_function)
-    attach_early_stopping(trainer, args.patience, score_function=score_function)
+    attach_early_stopping(validation_evaluator, trainer, args.patience, score_function=score_function)
 
     trainer.run(train_loader, max_epochs=args.epochs)
