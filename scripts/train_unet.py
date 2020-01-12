@@ -136,8 +136,10 @@ def get_sets(volumes_path, masks_path, volumes_transformations, masks_transforma
     volumes_set = datasets.NiftiFolder(volumes_path, volumes_transformations)
     masks_set = datasets.NiftiFolder(masks_path, masks_transformations)
 
-    train_indeces = list(range(0, int(len(volumes_set) * args.train_valid_ratio)))
-    valid_indeces = list(range(int(len(volumes_set) * args.train_valid_ratio), len(volumes_set)))
+    train_indeces = [1]
+    # train_indeces = list(range(0, int(len(volumes_set) * args.train_valid_ratio)))
+    # valid_indeces = list(range(int(len(volumes_set) * args.train_valid_ratio), len(volumes_set)))
+    valid_indeces = [2]
 
     train_volumes_set = Subset(volumes_set, train_indeces)
     valid_volumes_set = Subset(volumes_set, valid_indeces)
@@ -198,6 +200,6 @@ if __name__ == '__main__':
     attach_tensorboard(args.log_dir, train_evaluator, validation_evaluator, trainer)
     attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=args.epochs)
     attach_best_checkpoint(validation_evaluator, model, args.log_dir, score_function=score_function)
-    attach_early_stopping(validation_evaluator, args.patience, score_function=score_function)
+    attach_early_stopping(trainer, args.patience, score_function=score_function)
 
     trainer.run(train_loader, max_epochs=args.epochs)
