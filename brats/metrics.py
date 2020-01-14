@@ -1,10 +1,8 @@
-import typing
+from typing import Callable
 
 import torch
-import numpy as np
-import medpy.metric.binary as mp
 
-import brats.utils as utils
+import brats.functional as F
 
 CHANNELS_DIM = 1
 ONE_CLASS = 1
@@ -33,15 +31,7 @@ class DiceScoreOneClass:
         Returns:
             torch.Tensor: DICE score averaged across the whole batch
         """
-        assert prediction.shape[CHANNELS_DIM] == ONE_CLASS and \
-               target.shape[CHANNELS_DIM] == ONE_CLASS
-        all_but_batch_dims = list(range(1, target.dim()))
-        intersection = utils.calculate_intersection(prediction, target,
-                                                    dim=all_but_batch_dims)
-        union = utils.calculate_union(prediction, target,
-                                      dim=all_but_batch_dims)
-        score = (2. * intersection) / (union + self.epsilon)
-        return torch.mean(score)
+        return F.dice_one_class(prediction, target, self.epsilon)
 
 
 class RecallScore:
@@ -64,16 +54,7 @@ class RecallScore:
         Returns:
             torch.Tensor: Recall score averaged across the whole batch
         """
-        assert utils.is_binary(prediction), "Predictions must be binary"
-        assert utils.is_binary(target), "Target must be binary"
-        all_but_batch_dims = list(range(1, target.dim()))
-        true_positives = utils.calculate_intersection(prediction, target,
-                                                      dim=all_but_batch_dims)
-        false_negatives = utils.calculate_false_negatives(prediction, target,
-                                                          dim=all_but_batch_dims)
-        recall = true_positives / (
-                true_positives + false_negatives + self.epsilon)
-        return torch.mean(recall)
+        return F.recall(prediction, target, self.epsilon)
 
 
 class PrecisionScore:
@@ -96,16 +77,7 @@ class PrecisionScore:
         Returns:
             torch.Tensor: Precision score averaged across the whole batch
         """
-        assert utils.is_binary(prediction), "Predictions must be binary"
-        assert utils.is_binary(target), "Target must be binary"
-        all_but_batch_dims = list(range(1, target.dim()))
-        true_positives = utils.calculate_intersection(prediction, target,
-                                                      dim=all_but_batch_dims)
-        false_positive = utils.calculate_false_positives(prediction, target,
-                                                         dim=all_but_batch_dims)
-        precision = true_positives / (
-                    true_positives + false_positive + self.epsilon)
-        return torch.mean(precision)
+        return F.precision(prediction, target, self.epsilon)
 
 
 class FScore:
@@ -118,8 +90,6 @@ class FScore:
         """
         self.beta = beta
         self.epsilon = epsilon
-        self.precision_score = PrecisionScore()
-        self.recall_score = RecallScore()
 
     def __call__(self, prediction: torch.Tensor,
                  target: torch.Tensor) -> torch.Tensor:
@@ -132,15 +102,11 @@ class FScore:
         Returns:
             torch.Tensor: F Score averaged across the whole batch
         """
-        precision = self.precision_score(prediction, target)
-        recall = self.recall_score(prediction, target)
-        f_score = (1 + self.beta ** 2) * ((precision * recall) / (
-                self.beta ** 2 * precision + recall + self.epsilon))
-        return torch.mean(f_score)
+        return F.f_score(prediction, target, self.beta, self.epsilon)
 
 
 class HausdorffDistance95:
-    def __init__(self, merge_operation=torch.max):
+    def __init__(self, merge_operation: Callable[[torch.Tensor], float] = torch.max):
         """
         95th percentile of the Hausdorff Distance.
 
@@ -168,17 +134,4 @@ class HausdorffDistance95:
             torch.Tensor: Hausdorff distance for each slice.
                     Dimensions - (Batch, Depth)
             """
-        assert utils.is_binary(prediction), "Predictions must be binary"
-        assert utils.is_binary(target), "Target must be binary"
-        prediction = prediction.cpu().detach().numpy()
-        target = target.cpu().detach().numpy()
-        volumes_count, _, slices_count, _, _ = prediction.shape
-        results = np.zeros((volumes_count, slices_count))
-        for volume_idx in range(volumes_count):
-            for slice_idx in range(slices_count):
-                prediction_slice = prediction[
-                    volume_idx, FIRST_CLASS, slice_idx, ...]
-                target_slice = target[volume_idx, FIRST_CLASS, slice_idx, ...]
-                results[volume_idx, slice_idx] = mp.hd95(prediction_slice,
-                                                         target_slice)
-        return self.merge_operation(torch.from_numpy(results))
+        return F.hausdorff95(prediction, target, self.merge_operation)

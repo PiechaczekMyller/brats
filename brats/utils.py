@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 
 def is_binary(input: torch.Tensor) -> bool:
@@ -12,6 +13,19 @@ def is_binary(input: torch.Tensor) -> bool:
     """
     zero_and_one = torch.tensor([0., 1.], device=input.device)
     return all([value in zero_and_one for value in torch.unique(input)])
+
+
+def has_only_zeros(input: np.ndarray) -> bool:
+    """
+    Check whether the input contains only 0s.
+    Args:
+        input: Array to check
+
+    Returns:
+        bool: True if contains only 0s, False otherwise
+
+    """
+    return not np.any(input != 0)
 
 
 def calculate_intersection(x1: torch.Tensor, x2: torch.Tensor,
