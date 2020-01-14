@@ -10,6 +10,7 @@ CHANNELS_DIM = 1
 ONE_CLASS = 1
 FIRST_CLASS = 0
 
+
 class DiceScoreOneClass:
     def __init__(self, epsilon: float = 1e-6):
         """
@@ -19,7 +20,6 @@ class DiceScoreOneClass:
             epsilon: Smooth factor for each element in the batch
         """
         self.epsilon = epsilon
-
 
     def __call__(self, prediction: torch.Tensor,
                  target: torch.Tensor) -> torch.Tensor:

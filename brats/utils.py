@@ -1,7 +1,5 @@
 import torch
 
-ZERO_AND_ONE = torch.tensor([0., 1.])
-
 
 def is_binary(input: torch.Tensor) -> bool:
     """
@@ -12,7 +10,8 @@ def is_binary(input: torch.Tensor) -> bool:
         bool: True if contains only 0s and/or 1s, False otherwise
 
     """
-    return all([value in ZERO_AND_ONE for value in torch.unique(input)])
+    zero_and_one = torch.tensor([0., 1.], device=input.device)
+    return all([value in zero_and_one for value in torch.unique(input)])
 
 
 def calculate_intersection(x1: torch.Tensor, x2: torch.Tensor,
