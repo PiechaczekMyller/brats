@@ -1,5 +1,6 @@
 import torch
 import pytest
+import numpy as np
 
 import brats.utils as utils
 
@@ -21,6 +22,22 @@ class TestIsBinary:
 
     def test_if_returns_true_for_only_0s(self):
         assert utils.is_binary(torch.zeros(VOLUME_DIMS))
+
+
+class TestHasOnlyZeros:
+
+    def test_if_returns_true_for_only_zeros(self):
+        input = np.zeros(VOLUME_DIMS)
+        assert utils.has_only_zeros(input)
+
+    def test_if_returns_false_for_different_than_zero(self):
+        input = np.zeros(VOLUME_DIMS)
+        input[0, 0, 0] = 1
+        assert not utils.has_only_zeros(input)
+
+    def test_if_returns_false_for_only_ones(self):
+        input = np.ones(VOLUME_DIMS)
+        assert not utils.has_only_zeros(input)
 
 
 class TestCalculateFalseNegatives:
