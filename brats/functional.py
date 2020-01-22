@@ -6,59 +6,60 @@ import medpy.metric.binary as mp
 
 import brats.utils as utils
 
+BATCH_DIM = 0
 CHANNELS_DIM = 1
 ONE_CLASS = 1
 FIRST_CLASS = 0
 
 
-def dice_one_class(prediction: torch.Tensor,
-                   target: torch.Tensor, epsilon: float = 1e-6) -> torch.Tensor:
+def dice(prediction: torch.Tensor,
+         target: torch.Tensor, epsilon: float = 1e-6) -> torch.Tensor:
     """
-    Compute an average DICE score across a batch of volumes, containing only
-    prediction for one class
+    Compute an average DICE score across a batch of volumes for each class.
     Args:
         prediction: Network output.
             Dimensions - (Batch, Class, Depth, Height, Width)
-        target: Target values.
+        target: Target values. The classes should be one-hot encoded.
             Dimensions - (Batch, Class, Depth, Height, Width)
         epsilon: Smooth factor for each element in the batch
     Returns:
-        torch.Tensor: DICE score averaged across the whole batch
+        torch.Tensor: DICE score for each class averaged across the whole batch.
     """
-    assert prediction.shape[CHANNELS_DIM] == ONE_CLASS and \
-           target.shape[CHANNELS_DIM] == ONE_CLASS
-    all_but_batch_dims = list(range(1, target.dim()))
+    volume_dims = list(range(2, target.dim()))
     intersection = utils.calculate_intersection(prediction, target,
-                                                dim=all_but_batch_dims)
+                                                dim=volume_dims)
     union = utils.calculate_union(prediction, target,
-                                  dim=all_but_batch_dims)
+                                  dim=volume_dims)
     score = (2. * intersection) / (union + epsilon)
-    return torch.mean(score)
+    score = torch.mean(score, dim=BATCH_DIM)
+    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
 
 
 def recall(prediction: torch.Tensor,
            target: torch.Tensor, epsilon: float = 1e-6) -> torch.Tensor:
     """
-    Compute the recall score
+    Compute the recall score for each of the classes
     Args:
         prediction: Network output.
             Dimensions - (Batch, Class, Depth, Height, Width)
-        target: Target values.
+        target: Target values. The classes should be one-hot encoded.
             Dimensions - (Batch, Class, Depth, Height, Width)
         epsilon: Smooth factor to prevent division by 0.
     Returns:
-        torch.Tensor: Recall score averaged across the whole batch
+        torch.Tensor: Recall score calculated for each class
+            averaged across the whole batch
     """
     assert utils.is_binary(prediction), "Predictions must be binary"
     assert utils.is_binary(target), "Target must be binary"
-    all_but_batch_dims = list(range(1, target.dim()))
+    volume_dims = list(range(2, target.dim()))
     true_positives = utils.calculate_intersection(prediction, target,
-                                                  dim=all_but_batch_dims)
+                                                  dim=volume_dims)
     false_negatives = utils.calculate_false_negatives(prediction, target,
-                                                      dim=all_but_batch_dims)
+                                                      dim=volume_dims)
     score = true_positives / (
             true_positives + false_negatives + epsilon)
-    return torch.mean(score)
+    score = torch.mean(score, dim=BATCH_DIM)
+    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
 
 
 def precision(prediction: torch.Tensor,
@@ -68,44 +69,47 @@ def precision(prediction: torch.Tensor,
     Args:
         prediction: Network output.
             Dimensions - (Batch, Class, Depth, Height, Width)
-        target: Target values.
+        target: Target values. The classes should be one-hot encoded.
             Dimensions - (Batch, Class, Depth, Height, Width)
         epsilon: Smooth factor to prevent division by 0.
     Returns:
-        torch.Tensor: Precision score averaged across the whole batch
+        torch.Tensor: Precision score calculated for each class
+            averaged across the whole batch
     """
     assert utils.is_binary(prediction), "Predictions must be binary"
     assert utils.is_binary(target), "Target must be binary"
-    all_but_batch_dims = list(range(1, target.dim()))
+    volume_dims = list(range(2, target.dim()))
     true_positives = utils.calculate_intersection(prediction, target,
-                                                  dim=all_but_batch_dims)
+                                                  dim=volume_dims)
     false_positive = utils.calculate_false_positives(prediction, target,
-                                                     dim=all_but_batch_dims)
+                                                     dim=volume_dims)
     score = true_positives / (
             true_positives + false_positive + epsilon)
-    return torch.mean(score)
+    score = torch.mean(score, dim=BATCH_DIM)
+    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
 
 
 def f_score(prediction: torch.Tensor,
             target: torch.Tensor, beta: float,
             epsilon: float = 1e-6) -> torch.Tensor:
     """
-    Compute the F score
+    Compute the F score for each class
     Args:
         prediction: Network output.
             Dimensions - (Batch, Class, Depth, Height, Width)
-        target: Target values.
+        target: Target values. The classes should be one-hot encoded.
             Dimensions - (Batch, Class, Depth, Height, Width)
         beta: Weight parameter between precision and recall
         epsilon: Smooth factor to prevent division by 0.
     Returns:
-        torch.Tensor: F Score averaged across the whole batch
+        torch.Tensor: F Score calculated for each class
+            averaged across the whole batch
     """
     precision_score = precision(prediction, target, epsilon)
     recall_score = recall(prediction, target, epsilon)
     score = (1 + beta ** 2) * ((precision_score * recall_score) / (
             beta ** 2 * precision_score + recall_score + epsilon))
-    return torch.mean(score)
+    return score
 
 
 def hausdorff95(prediction: torch.Tensor, target: torch.Tensor,

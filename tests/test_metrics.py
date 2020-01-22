@@ -9,7 +9,7 @@ CHANNEL_DIM = 1
 
 
 class TestDiceScoreOneClass:
-    metric = metrics.DiceScoreOneClass()
+    metric = metrics.DiceScore()
 
     def test_if_returns_1_for_perfect_fit(self):
         images = torch.ones(*BATCH_DIMS)
