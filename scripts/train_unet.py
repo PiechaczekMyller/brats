@@ -193,7 +193,7 @@ if __name__ == '__main__':
         metrics = train_evaluator.state.metrics
         print(f"Training Results - Epoch: {trainer.state.epoch}  "
               f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {1-metrics['dice_loss']:.4f}", flush=True)
+              f"Dice: {metrics['dice_score']:.4f}", flush=True)
 
 
     @trainer.on(Events.EPOCH_COMPLETED)
@@ -201,7 +201,7 @@ if __name__ == '__main__':
         metrics = validation_evaluator.state.metrics
         print(f"Validation Results - Epoch: {trainer.state.epoch}  "
               f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {1-metrics['dice_loss']:.4f}", flush=True)
+              f"Dice: {metrics['dice_score']:.4f}", flush=True)
 
 
     attach_tensorboard(args.log_dir, train_evaluator, validation_evaluator, trainer)
