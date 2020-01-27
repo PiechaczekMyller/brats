@@ -9,11 +9,11 @@ ONE_CLASS = 1
 FIRST_CLASS = 0
 
 
-class DiceScoreOneClass:
+class DiceScore:
     def __init__(self, epsilon: float = 1e-6):
         """
-        Compute an average DICE score across a batch of volumes, containing only
-        prediction for one class
+        Compute an average DICE score across a batch of volumes, for each class
+        separately.
         Args:
             epsilon: Smooth factor for each element in the batch
         """
@@ -26,12 +26,13 @@ class DiceScoreOneClass:
         Args:
             prediction: Network output.
                 Dimensions - (Batch, Class, Depth, Height, Width)
-            target: Target values.
+            target: Target values. The classes should be ont-hot encoded.
                 Dimensions - (Batch, Class, Depth, Height, Width)
         Returns:
-            torch.Tensor: DICE score averaged across the whole batch
+            torch.Tensor: DICE for each class score averaged
+                across the whole batch
         """
-        return F.dice_one_class(prediction, target, self.epsilon)
+        return F.dice(prediction, target, self.epsilon)
 
 
 class RecallScore:
@@ -49,10 +50,11 @@ class RecallScore:
         Args:
             prediction: Network output.
                 Dimensions - (Batch, Class, Depth, Height, Width)
-            target: Target values.
+            target: Target values. The classes should be ont-hot encoded.
                 Dimensions - (Batch, Class, Depth, Height, Width)
         Returns:
-            torch.Tensor: Recall score averaged across the whole batch
+            torch.Tensor: Recall score for each class averaged
+                across the whole batch
         """
         return F.recall(prediction, target, self.epsilon)
 
@@ -72,10 +74,11 @@ class PrecisionScore:
         Args:
             prediction: Network output.
                 Dimensions - (Batch, Class, Depth, Height, Width)
-            target: Target values.
+            target: Target values. The classes should be ont-hot encoded.
                 Dimensions - (Batch, Class, Depth, Height, Width)
         Returns:
-            torch.Tensor: Precision score averaged across the whole batch
+            torch.Tensor: Precision score for each class averaged
+                across the whole batch
         """
         return F.precision(prediction, target, self.epsilon)
 
@@ -97,10 +100,11 @@ class FScore:
         Args:
             prediction: Network output.
                 Dimensions - (Batch, Class, Depth, Height, Width)
-            target: Target values.
+            target: Target values. The classes should be ont-hot encoded.
                 Dimensions - (Batch, Class, Depth, Height, Width)
         Returns:
-            torch.Tensor: F Score averaged across the whole batch
+            torch.Tensor: F Score for each class averaged
+                across the whole batch
         """
         return F.f_score(prediction, target, self.beta, self.epsilon)
 
