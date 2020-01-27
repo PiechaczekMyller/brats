@@ -29,6 +29,7 @@ def get_volumes_transformations(input_size, device):
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                             transformations.ResizeVolumeTransformation(input_size),
                                             transformations.StandardizeVolume(),
+                                            trfs.Lambda(lambda x: x.float()),
                                             trfs.Lambda(lambda x: x.to(device))
                                             ])
     return volumes_transformations
@@ -42,6 +43,7 @@ def get_masks_transformations(input_size, device):
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           transformations.ResizeVolumeTransformation(input_size),
+                                          trfs.Lambda(lambda x: x.float()),
                                           trfs.Lambda(lambda x: x.to(device))
                                           ])
     return masks_transformations
@@ -86,14 +88,6 @@ def attach_tensorboard(log_dir, train_evaluator, validation_evaluator, trainer):
 
 
 def attach_periodic_checkpoint(engine, model, log_dir, n_saved):
-    state_dict_checkpoint = ModelCheckpoint(os.path.join(log_dir, 'state_dicts'),
-                                            filename_prefix='state_dict',
-                                            save_interval=1,
-                                            n_saved=n_saved,
-                                            create_dir=True,
-                                            save_as_state_dict=True)
-    engine.add_event_handler(Events.EPOCH_COMPLETED, state_dict_checkpoint, {'unet3D': model})
-
     model_checkpoint = ModelCheckpoint(os.path.join(log_dir, 'models'),
                                        filename_prefix='model',
                                        save_interval=1,
@@ -176,7 +170,8 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
 
-    model = UNet3D(args.in_channels, args.out_channels).double()
+    model = UNet3D(args.in_channels, args.out_channels)
+    model = model.float()
     model.to(args.device)
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -198,7 +193,7 @@ if __name__ == '__main__':
         metrics = train_evaluator.state.metrics
         print(f"Training Results - Epoch: {trainer.state.epoch}  "
               f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {1-metrics['dice_loss']:.4f}")
+              f"Dice: {1-metrics['dice_loss']:.4f}", flush=True)
 
 
     @trainer.on(Events.EPOCH_COMPLETED)
@@ -206,13 +201,13 @@ if __name__ == '__main__':
         metrics = validation_evaluator.state.metrics
         print(f"Validation Results - Epoch: {trainer.state.epoch}  "
               f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {1-metrics['dice_loss']:.4f}")
+              f"Dice: {1-metrics['dice_loss']:.4f}", flush=True)
 
 
-    attach_progress_bar(trainer)
     attach_tensorboard(args.log_dir, train_evaluator, validation_evaluator, trainer)
-    attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=args.epochs)
+    attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=5)
     attach_best_checkpoint(validation_evaluator, model, args.log_dir, score_function=score_function)
     attach_early_stopping(validation_evaluator, trainer, args.patience, score_function=score_function)
 
+    X = train_set[0]
     trainer.run(train_loader, max_epochs=args.epochs)
