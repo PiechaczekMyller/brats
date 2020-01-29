@@ -180,7 +180,7 @@ if __name__ == '__main__':
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     metrics = get_metrics()
-    trainer = create_supervised_trainer(model, optimizer, DiceLossOneClass())
+    trainer = create_supervised_trainer(model, optimizer, DiceLoss())
     train_evaluator = create_supervised_evaluator(model, metrics, args.device)
     validation_evaluator = create_supervised_evaluator(model, metrics, args.device)
 
