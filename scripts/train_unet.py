@@ -16,8 +16,8 @@ from torch.utils.data import Subset
 from torchvision import transforms as trfs
 from brats import transformations
 from brats.data import datasets
-from brats.losses import DiceLossOneClass
-from brats.metrics import RecallScore, PrecisionScore, DiceScoreOneClass
+from brats.losses import DiceLoss
+from brats.metrics import RecallScore, PrecisionScore, DiceScore
 from brats.models import UNet3D
 
 
@@ -61,8 +61,8 @@ def get_metrics():
     def to_float(input: typing.Tuple[torch.Tensor, torch.Tensor]) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         return input[0].float(), input[1].float()
 
-    return {'dice_loss': Loss(DiceLossOneClass()),
-            'dice_score': Loss(DiceScoreOneClass()),
+    return {'dice_loss': Loss(DiceLoss()),
+            'dice_score': Loss(DiceScore()),
             'recall': Loss(RecallScore(), output_transform=lambda x: to_binary(to_float(x))),
             'precision': Loss(PrecisionScore(), output_transform=lambda x: to_binary(to_float(x)))
             }
@@ -134,7 +134,7 @@ def create_parser():
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--train_valid_ratio', type=float, default=0.8)
     parser.add_argument('--input_size', type=int, default=240)
-    parser.add_argument('--verbose', type=int, default=0)
+    parser.add_argument('--progress_bar', type=int, default=0)
 
     return parser
 
@@ -207,7 +207,7 @@ if __name__ == '__main__':
               f"Dice: {metrics['dice_score']:.4f}", flush=True)
 
 
-    if args.verbose:
+    if args.progress_bar:
         attach_progress_bar(trainer)
     attach_tensorboard(args.log_dir, train_evaluator, validation_evaluator, trainer)
     attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=5)
