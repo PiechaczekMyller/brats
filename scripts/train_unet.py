@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import typing
 
@@ -209,5 +210,8 @@ if __name__ == '__main__':
     attach_periodic_checkpoint(validation_evaluator, model, args.log_dir, n_saved=5)
     attach_best_checkpoint(validation_evaluator, model, args.log_dir, score_function=score_function)
     attach_early_stopping(validation_evaluator, trainer, args.patience, score_function=score_function)
+
+    with open(os.path.join(args.log_dir, "parameters.json"), 'w') as fp:
+        json.dump(vars(args), fp)
 
     trainer.run(train_loader, max_epochs=args.epochs)
