@@ -159,6 +159,7 @@ def score_function(engine):
 
 
 if __name__ == '__main__':
+    torch.manual_seed(0)
     parser = create_parser()
     args = parser.parse_args()
 
@@ -209,5 +210,4 @@ if __name__ == '__main__':
     attach_best_checkpoint(validation_evaluator, model, args.log_dir, score_function=score_function)
     attach_early_stopping(validation_evaluator, trainer, args.patience, score_function=score_function)
 
-    X = train_set[0]
     trainer.run(train_loader, max_epochs=args.epochs)
