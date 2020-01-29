@@ -165,7 +165,8 @@ if __name__ == '__main__':
     volumes_transformations = get_volumes_transformations(args.input_size, args.device)
     masks_transformations = get_masks_transformations(args.input_size, args.device)
 
-    train_set, valid_set = get_sets(args.dataset_json, args.division_json, volumes_transformations, masks_transformations)
+    train_set, valid_set = get_sets(args.dataset_json, args.division_json, volumes_transformations,
+                                    masks_transformations)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)

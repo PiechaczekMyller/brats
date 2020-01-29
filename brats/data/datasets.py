@@ -24,7 +24,7 @@ class NiftiFolder(data.Dataset):
         self._transform = transform
 
     @classmethod
-    def from_dir(cls, root: str, transforms: typing.List[typing.Callable] = None):
+    def from_dir(cls, root: str, transforms: typing.Callable = None):
         files = [entry.path for entry in os.scandir(root)]
         return NiftiFolder(files, transforms)
 

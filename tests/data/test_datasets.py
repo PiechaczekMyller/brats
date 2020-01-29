@@ -22,9 +22,11 @@ def input_directory(tmpdir_factory):
 
 
 class TestNiftiFolder:
-    def returns_correct_len(self, input_directory):
+    @staticmethod
+    def returns_correct_len(input_directory):
         dataset = datasets.NiftiFolder(["sick.nii.gz" for _ in range(IMAGES)])
         assert len(dataset) == IMAGES
+
     def test_if_loads_images_from_directory(self, input_directory):
         dataset = datasets.NiftiFolder.from_dir(input_directory)
         assert len(dataset) == IMAGES
