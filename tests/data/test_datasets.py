@@ -22,19 +22,22 @@ def input_directory(tmpdir_factory):
 
 
 class TestNiftiFolder:
+    def returns_correct_len(self, input_directory):
+        dataset = datasets.NiftiFolder(["sick.nii.gz" for _ in range(IMAGES)])
+        assert len(dataset) == IMAGES
     def test_if_loads_images_from_directory(self, input_directory):
-        dataset = datasets.NiftiFolder(input_directory)
+        dataset = datasets.NiftiFolder.from_dir(input_directory)
         assert len(dataset) == IMAGES
 
     def test_if_loads_images_in_correct_shape(self, input_directory):
-        dataset = datasets.NiftiFolder(input_directory)
+        dataset = datasets.NiftiFolder.from_dir(input_directory)
 
         for idx in range(len(dataset)):
             assert dataset[idx].shape == INPUT_IMAGE_SHAPE
 
     def test_if_applies_transforms(self, input_directory):
         transform = Lambda(lambda x: np.pad(x, (2, 2)))
-        dataset = datasets.NiftiFolder(input_directory, transform)
+        dataset = datasets.NiftiFolder.from_dir(input_directory, transform)
 
         for idx in range(len(dataset)):
             assert np.all(dataset[idx].shape == np.array(INPUT_IMAGE_SHAPE) + 4)
@@ -42,26 +45,26 @@ class TestNiftiFolder:
 
 class TestCombinedDataset:
     def test_returns_correct_length(self, input_directory):
-        dataset1 = datasets.NiftiFolder(input_directory)
-        dataset2 = datasets.NiftiFolder(input_directory)
-        dataset3 = datasets.NiftiFolder(input_directory)
+        dataset1 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset2 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset3 = datasets.NiftiFolder.from_dir(input_directory)
 
         dataset = datasets.CombinedDataset(dataset1, dataset2, dataset3)
         assert len(dataset) == IMAGES
 
     def test_returns_correct_entries(self, input_directory):
-        dataset1 = datasets.NiftiFolder(input_directory)
-        dataset2 = datasets.NiftiFolder(input_directory)
-        dataset3 = datasets.NiftiFolder(input_directory)
+        dataset1 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset2 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset3 = datasets.NiftiFolder.from_dir(input_directory)
 
         dataset = datasets.CombinedDataset(dataset1, dataset2, dataset3)
 
         assert all(np.array_equal(entry, dataset1[0]) for entry in dataset[0])
 
     def test_if_raises_on_unequal_length(self, input_directory):
-        dataset1 = datasets.NiftiFolder(input_directory)
-        dataset2 = datasets.NiftiFolder(input_directory)
-        dataset3 = datasets.NiftiFolder(input_directory)
+        dataset1 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset2 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset3 = datasets.NiftiFolder.from_dir(input_directory)
 
         dataset2._files = [dataset2._files[0]]
         with pytest.raises(AssertionError):
