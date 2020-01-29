@@ -1,3 +1,4 @@
+import json
 import os
 import typing
 
@@ -18,15 +19,20 @@ class NiftiFolder(data.Dataset):
     (Note that the order of the modalities doesn't matter, however it should be consistent for whole dataset)
     """
 
-    def __init__(self, root: str, transform=None):
-        self._files = list(os.scandir(root))
+    def __init__(self, paths: typing.List[str], transform: typing.List[typing.Callable] = None):
+        self._files = paths
         self._transform = transform
+
+    @classmethod
+    def from_dir(cls, root: str, transforms: typing.List[typing.Callable] = None):
+        files = [entry.path for entry in os.scandir(root)]
+        return NiftiFolder(files, transforms)
 
     def __len__(self) -> int:
         return len(self._files)
 
     def __getitem__(self, idx: int) -> typing.Any:
-        scan = nib.load(self._files[idx].path)
+        scan = nib.load(self._files[idx])
         scan_array = scan.get_fdata()
 
         if self._transform:
@@ -50,3 +56,17 @@ class CombinedDataset(data.Dataset):
 
     def __getitem__(self, idx: int) -> typing.Tuple[typing.Any, ...]:
         return tuple(dataset[idx] for dataset in self.datasets)
+
+
+def read_dataset_json(path_to_json):
+    """
+    Reads pairs of images and masks from json file.
+    :param path_to_json: Path to the file from decathlon challange
+    :return: Tuple with list of paths to images and list of path to masks
+    """
+    with open(path_to_json, "r") as json_file:
+        json_dict = json.load(json_file)
+    root = os.path.dirname(path_to_json)
+    images_paths = [os.path.join(root, line["image"].replace("./", "")) for line in json_dict["training"]]
+    masks_paths = [os.path.join(root, line["label"].replace("./", "")) for line in json_dict["training"]]
+    return images_paths, masks_paths
