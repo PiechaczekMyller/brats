@@ -41,7 +41,7 @@ def get_masks_transformations(input_size, device):
     masks_transformations = trfs.Compose([transformations.AddChannelDimToMaskTransformation(),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                          transformations.BinarizationTransformation(),
+                                          transformations.OneHotEncoding(),
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           transformations.ResizeVolumeTransformation(input_size),
@@ -62,8 +62,16 @@ def get_metrics():
     def to_float(input: typing.Tuple[torch.Tensor, torch.Tensor]) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         return input[0].float(), input[1].float()
 
+    def metric_for_class(metric, class_id):
+        def wrapper(y_pred, y):
+            return metric(y_pred, y)[class_id]
+
+        return wrapper
+
     return {'dice_loss': Loss(DiceLoss()),
-            'dice_score': Loss(DiceScore()),
+            'dice_score_0': Loss(metric_for_class(0, DiceScore())),
+            'dice_score_1': Loss(metric_for_class(1, DiceScore())),
+            'dice_score_2': Loss(metric_for_class(2, DiceScore())),
             'recall': Loss(RecallScore(), output_transform=lambda x: to_binary(to_float(x))),
             'precision': Loss(PrecisionScore(), output_transform=lambda x: to_binary(to_float(x)))
             }
@@ -147,14 +155,14 @@ def get_sets(dataset_json, division_json, volumes_transformations, masks_transfo
     combined_set = datasets.CombinedDataset(volumes_set, masks_set)
     with open(division_json, "r") as division_file:
         indeces = json.load(division_file)
-    train_set = Subset(combined_set, indeces["train"])
-    valid_set = Subset(combined_set, indeces["valid"])
+    train_set = Subset(combined_set, [0, 1, 2])
+    valid_set = Subset(combined_set, [0, 1, 2])
 
     return train_set, valid_set
 
 
 def score_function(engine):
-    return engine.state.metrics['dice_score']
+    return 3 - engine.state.metrics['dice_loss']
 
 
 if __name__ == '__main__':
@@ -171,7 +179,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
 
-    model = UNet3D(args.in_channels, args.out_channels)
+    model = UNet3D(1, 3)
     model = model.float()
     model.to(args.device)
 
@@ -193,16 +201,18 @@ if __name__ == '__main__':
     def print_train_results(engine):
         metrics = train_evaluator.state.metrics
         print(f"Training Results - Epoch: {trainer.state.epoch}  "
-              f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {metrics['dice_score']:.4f}", flush=True)
+              f"Dice 1: {metrics['dice_score_0']:.4f} "
+              f"Dice 2: {metrics['dice_score_1']:.4f} "
+              f"Dice 3: {metrics['dice_score_2']:.4f}", flush=True)
 
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def print_validation_results(engine):
         metrics = validation_evaluator.state.metrics
         print(f"Validation Results - Epoch: {trainer.state.epoch}  "
-              f"Dice loss: {metrics['dice_loss']:.4f} "
-              f"Dice: {metrics['dice_score']:.4f}", flush=True)
+              f"Dice 1: {metrics['dice_score_0']:.4f} "
+              f"Dice 2: {metrics['dice_score_1']:.4f} "
+              f"Dice 3: {metrics['dice_score_2']:.4f}", flush=True)
 
 
     if args.progress_bar:

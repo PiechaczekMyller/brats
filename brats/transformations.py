@@ -196,3 +196,43 @@ class StandardizeVolume:
         stds = tensor.std(dim=[1, 2, 3], keepdims=True)
         transformed = (tensor - means) / stds
         return transformed
+
+
+class OneHotEncoding:
+    """
+    From multiclass label image with one channel it creates N channel image,
+    where each channel is a mask of different class.
+    """
+
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
+        assert img.ndim == 4, "Tensor should have 4 dimensions (C,D,H,W)"
+        transformed = one_hot_encoding(img)
+        return transformed
+
+
+@singledispatch
+def one_hot_encoding(img: typing.Any):
+    raise TypeError("Img should be either np.ndarray of torch.Tensor")
+
+
+@one_hot_encoding.register(np.ndarray)
+def _(img: np.ndarray) -> np.ndarray:
+    classes = np.unique(img)
+    classes = classes[classes != 0]  # Without the background label
+    new_shape = [len(classes)] + list(img.shape[1:])
+    transformed = np.zeros(new_shape)
+    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+        transformed[class_id][img[0, ...] == label] = 1
+    return transformed
+
+
+@one_hot_encoding.register(torch.Tensor)
+def _(img: torch.Tensor) -> torch.Tensor:
+    classes = torch.unique(img)
+    classes = classes[classes != 0]  # Without the background label
+    new_shape = [len(classes)] + list(img.shape[1:])
+    transformed = torch.zeros(new_shape)
+
+    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+        transformed[class_id][img[0, ...] == label] = 1
+    return transformed
