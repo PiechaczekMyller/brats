@@ -88,7 +88,7 @@ def reorder(img: typing.Any):
 
 @reorder.register(np.ndarray)
 def _(img: np.ndarray) -> np.ndarray:
-    transformed = np.moveaxis(img, [0, 1, 2, 3], [2, 3, 1, 0])
+    transformed = np.moveaxis(img, [0, 1, 2, 3], [3, 2, 1, 0])
     return transformed
 
 
