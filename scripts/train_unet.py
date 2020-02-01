@@ -91,7 +91,7 @@ if __name__ == '__main__':
     for epoch in range(args.epochs):
         train_loss = run_training_epoch(model, train_loader, optimizer, criterion, args.device)
         valid_loss = run_validation_epoch(model, valid_loader, criterion, args.device)
-        print(f"Training Results - Epoch: {epoch}  "
+        print(f"Epoch: {epoch}  "
               f"Train loss: {train_loss:.4f} "
               f"Valid loss: {valid_loss:.4f}", flush=True)
 
