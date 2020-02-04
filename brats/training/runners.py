@@ -5,6 +5,11 @@ from torch.utils import data
 
 
 def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer, criterion, device):
+    """
+    Function performing one training epoch.
+    Args:
+        :param device: Device where the data will be send.
+    """
     model.train(True)
     losses = []
     for input, target in data_loader:
@@ -16,11 +21,15 @@ def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer
         loss.backward()
         optimizer.step()
         losses.append(loss.item())
-
     return np.mean(losses) if losses else 0.0
 
 
 def run_validation_epoch(model: nn.Module, data_loader: data.DataLoader, criterion, device):
+    """
+    Function performing one validation epoch.
+    Args:
+        :param device: Device where the data will be send.
+    """
     model.train(False)
     losses = []
     with torch.no_grad():
