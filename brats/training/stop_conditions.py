@@ -5,7 +5,8 @@ class EarlyStopping:
         :param patience: Allowed number of epochs without an improvement.
     """
 
-    def __init__(self, patience):
+    def __init__(self, patience: int):
+        assert patience >= 1, "Patience cannot be lower than 1"
         self.patience = patience
         self.epochs_without_improvement = 0
         self.best_loss = None
