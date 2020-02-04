@@ -69,16 +69,15 @@ if __name__ == '__main__':
     with open(args.division_json, "r") as division_file:
         indeces = json.load(division_file)
     train_set = Subset(combined_set, indeces["train"])
-    train_set = Subset(train_set, [1, 2, 3])
     valid_set = Subset(combined_set, indeces["valid"])
-    valid_set = Subset(valid_set, [1, 2, 3])
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
 
     model = UNet3D(1, 1).float()
+    model.to(args.device)
     criterion = DiceLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), args.learning_rate)
 
     last_model_logger = ModelLogger(os.path.join(args.log_dir, "models"))
     last_state_dict_logger = StateDictsLogger(os.path.join(args.log_dir, "models"))
@@ -86,7 +85,8 @@ if __name__ == '__main__':
     best_state_dict_logger = BestStateDictLogger(os.path.join(args.log_dir, "best"))
     tensorboard_logger = TensorboardLogger(args.log_dir)
 
-    early_stopping = EarlyStopping(10)
+    early_stopping = EarlyStopping(args.patience)
+
     log_parameters(args.log_dir, args)
     for epoch in range(args.epochs):
         train_loss = run_training_epoch(model, train_loader, optimizer, criterion, args.device)
