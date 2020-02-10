@@ -87,3 +87,16 @@ def calculate_false_positives(prediction: torch.Tensor, target: torch.Tensor,
     """
     return ((1 - target) * prediction).sum(dim=dim) if dim is not None else (
             (1 - target) * prediction).sum()
+
+
+def convert_image_to_uint8(image: np.ndarray) -> np.ndarray:
+    """
+    Convert the image tu uint8
+    Args:
+        image: Image to convert
+    Returns:
+        np.ndarray: Image in the uint8 format
+    """
+    image = (image - np.min(image)) / (np.max(image) - np.min(image))
+    image = 255 * image
+    return image.astype(np.uint8)
