@@ -65,7 +65,7 @@ class TestNiftiToTorchDimensionsReorderTransformation:
     def test_if_returns_correct_ndarray(self):
         transformation = trfs.NiftiToTorchDimensionsReorderTransformation()
         input = np.zeros([4, 5, 10, 3])
-        expected = np.zeros([3, 10, 5, 4])
+        expected = np.zeros([3, 10, 4, 5])
         assert transformation(input).shape == expected.shape
 
     @pytest.mark.parametrize("input",
