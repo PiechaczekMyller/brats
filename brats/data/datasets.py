@@ -58,7 +58,7 @@ class CombinedDataset(data.Dataset):
         return tuple(dataset[idx] for dataset in self.datasets)
 
 
-def read_dataset_json(path_to_json):
+def read_dataset_json(path_to_json, key = "training"):
     """
     Reads pairs of images and masks from json file.
     :param path_to_json: Path to the file from decathlon challange
@@ -67,6 +67,6 @@ def read_dataset_json(path_to_json):
     with open(path_to_json, "r") as json_file:
         json_dict = json.load(json_file)
     root = os.path.dirname(path_to_json)
-    images_paths = [os.path.join(root, line["image"].replace("./", "")) for line in json_dict["training"]]
-    masks_paths = [os.path.join(root, line["label"].replace("./", "")) for line in json_dict["training"]]
+    images_paths = [os.path.join(root, line["image"].replace("./", "")) for line in json_dict[key]]
+    masks_paths = [os.path.join(root, line["label"].replace("./", "")) for line in json_dict[key]]
     return images_paths, masks_paths
