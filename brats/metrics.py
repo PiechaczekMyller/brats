@@ -1,3 +1,4 @@
+import typing
 from typing import Callable
 
 import torch
@@ -139,3 +140,16 @@ class HausdorffDistance95:
                     Dimensions - (Batch, Depth)
             """
         return F.hausdorff95(prediction, target, self.merge_operation)
+
+
+def metric_for_class(metric: typing.Callable[[torch.Tensor, torch.Tensor], torch.Tensor], class_id: int):
+    """
+    Wrapper for multiclass metrics that creates function that extracts metrics for single classes"
+    :param metric: Function used to calculate metric
+    :param class_id: Id of the class (from 0 to N)
+    """
+
+    def wrapper(prediction, target):
+        return metric(prediction, target)[class_id]
+
+    return wrapper

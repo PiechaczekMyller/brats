@@ -35,7 +35,7 @@ class TestDiceScoreOneClass:
     def test_if_returns_expected_values(self, images, target, result):
         assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
                                       target.unsqueeze(dim=CHANNEL_DIM)),
-                           result, atol=1.e-3)
+                          result, atol=1.e-3)
 
     def test_if_returns_tensor_with_shape_0(self):
         images = torch.ones(*BATCH_DIMS)
@@ -195,3 +195,10 @@ class TestHausdorffDistance95:
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
         assert self.metric(images, target).shape == torch.Size([])
+
+
+class TestMetricForClass:
+    @pytest.mark.parametrize("matrics, class",
+                             [])
+    def test_if_returns_proper_metric(self):
+        pass  # TODO Add tests
