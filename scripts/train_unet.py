@@ -16,6 +16,7 @@ from torch.utils.data import Subset
 from torchvision import transforms as trfs
 from brats import transformations
 from brats.data import datasets
+from brats.data.datasets import read_dataset_json
 from brats.losses import DiceLoss
 from brats.metrics import RecallScore, PrecisionScore, DiceScore
 from brats.models import UNet3D
@@ -122,8 +123,8 @@ def attach_early_stopping(evaluator, trainer, patience, score_function):
 
 def create_parser():
     parser = argparse.ArgumentParser(description='Train UNet 3D.')
-    parser.add_argument('--volumes_path', type=str, required=True)
-    parser.add_argument('--masks_path', type=str, required=True)
+    parser.add_argument('--dataset_json', type=str, required=True)
+    parser.add_argument('--division_json', type=str, required=True)
     parser.add_argument('--log_dir', type=str, required=True)
     parser.add_argument('--device', type=str, required=True)
     parser.add_argument('--epochs', type=int, required=True)
@@ -139,20 +140,16 @@ def create_parser():
     return parser
 
 
-def get_sets(volumes_path, masks_path, volumes_transformations, masks_transformations):
-    volumes_set = datasets.NiftiFolder(volumes_path, volumes_transformations)
-    masks_set = datasets.NiftiFolder(masks_path, masks_transformations)
+def get_sets(dataset_json, division_json, volumes_transformations, masks_transformations):
+    volumes_paths, masks_paths = read_dataset_json(dataset_json)
+    volumes_set = datasets.NiftiFolder(volumes_paths, volumes_transformations)
+    masks_set = datasets.NiftiFolder(masks_paths, masks_transformations)
+    combined_set = datasets.CombinedDataset(volumes_set, masks_set)
+    with open(division_json, "r") as division_file:
+        indeces = json.load(division_file)
+    train_set = Subset(combined_set, indeces["train"])
+    valid_set = Subset(combined_set, indeces["valid"])
 
-    train_indeces = list(range(0, int(len(volumes_set) * args.train_valid_ratio)))
-    valid_indeces = list(range(int(len(volumes_set) * args.train_valid_ratio), len(volumes_set)))
-
-    train_volumes_set = Subset(volumes_set, train_indeces)
-    valid_volumes_set = Subset(volumes_set, valid_indeces)
-    train_masks_set = Subset(masks_set, train_indeces)
-    valid_masks_set = Subset(masks_set, valid_indeces)
-
-    train_set = datasets.CombinedDataset(train_volumes_set, train_masks_set)
-    valid_set = datasets.CombinedDataset(valid_volumes_set, valid_masks_set)
     return train_set, valid_set
 
 
@@ -168,7 +165,8 @@ if __name__ == '__main__':
     volumes_transformations = get_volumes_transformations(args.input_size, args.device)
     masks_transformations = get_masks_transformations(args.input_size, args.device)
 
-    train_set, valid_set = get_sets(args.volumes_path, args.masks_path, volumes_transformations, masks_transformations)
+    train_set, valid_set = get_sets(args.dataset_json, args.division_json, volumes_transformations,
+                                    masks_transformations)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
