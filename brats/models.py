@@ -10,22 +10,22 @@ class UNet3DBlock(nn.Module):
                                kernel_size=3,
                                padding=1,
                                bias=False)
-        self.norm1 = nn.InstanceNorm2d(out_channels)
+        self.bn1 = nn.InstanceNorm3d(out_channels)
         self.act1 = nn.PReLU()
         self.conv2 = nn.Conv3d(in_channels=out_channels,
                                out_channels=out_channels,
                                kernel_size=3,
                                padding=1,
                                bias=False)
-        self.norm2 = nn.InstanceNorm2d(out_channels)
+        self.bn2 = nn.InstanceNorm3d(out_channels)
         self.act2 = nn.PReLU()
 
     def forward(self, input):
         out = self.conv1(input)
-        out = self.norm1(out)
+        out = self.bn1(out)
         out = self.act1(out)
         out = self.conv2(out)
-        out = self.norm2(out)
+        out = self.bn2(out)
         out = self.act2(out)
         return out
 
