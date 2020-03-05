@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
                                           transformations.OneHotEncoding([0, 1, 2, 3]),
                                           trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           trfs.Lambda(lambda x: F.interpolate(x, size=args.input_size)),
                                           trfs.Lambda(lambda x: x.float())
                                           ])

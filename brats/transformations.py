@@ -1,3 +1,4 @@
+import enum
 import typing
 from copy import deepcopy
 from functools import singledispatch
@@ -210,21 +211,24 @@ class OneHotEncoding:
     where each channel is a mask of different class.
     """
 
-    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
+    def __init__(self, classes: typing.List[int]):
+        self.classes = classes
+
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor], ) -> typing.Union[np.ndarray, torch.Tensor]:
         assert img.ndim == 4, "Tensor should have 4 dimensions (C,D,H,W)"
-        transformed = one_hot_encoding(img)
+        transformed = one_hot_encoding(img, self.classes)
         return transformed
 
 
 @singledispatch
-def one_hot_encoding(img: typing.Any):
+def one_hot_encoding(img: typing.Any, classes: typing.List[int]):
     raise TypeError("Img should be either np.ndarray of torch.Tensor")
 
 
 @one_hot_encoding.register(np.ndarray)
-def _(img: np.ndarray) -> np.ndarray:
-    classes = np.unique(img)
-    classes = classes[classes != 0]  # Without the background label
+def _(img: np.ndarray, classes: typing.List[int]) -> np.ndarray:
+    if 0 in classes:
+        classes.remove(0)  # Without the background label
     new_shape = [len(classes)] + list(img.shape[1:])
     transformed = np.zeros(new_shape)
     for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
@@ -233,9 +237,9 @@ def _(img: np.ndarray) -> np.ndarray:
 
 
 @one_hot_encoding.register(torch.Tensor)
-def _(img: torch.Tensor) -> torch.Tensor:
-    classes = torch.unique(img)
-    classes = classes[classes != 0]  # Without the background label
+def _(img: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
+    if 0 in classes:
+        classes.remove(0)  # Without the background label
     new_shape = [len(classes)] + list(img.shape[1:])
     transformed = torch.zeros(new_shape)
 
