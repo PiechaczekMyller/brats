@@ -181,5 +181,5 @@ class TestOneHotEncoding:
     @pytest.mark.parametrize("input, n_classes",
                              [(torch.cat([torch.ones((1, 10, 4, 4)) * x for x in range(n)]), n) for n in range(2, 30)])
     def test_if_returns_correct_tensors(self, input, n_classes):
-        transformation = trfs.OneHotEncoding()
+        transformation = trfs.OneHotEncoding([n for n in range(n_classes)])
         assert transformation(input).shape == (n_classes - 1, 10, 4, 4)
