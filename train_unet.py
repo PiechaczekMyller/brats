@@ -31,10 +31,7 @@ if __name__ == '__main__':
         parser.add_argument('--batch_size', type=int)
         parser.add_argument('--patience', type=int, default=10)
         parser.add_argument('--learning_rate', type=float, default=0.001)
-        parser.add_argument('--train_valid_ratio', type=float, default=0.8)
         parser.add_argument('--input_size', type=int, default=240)
-        parser.add_argument('--progress_bar', type=int, default=0)
-
         return parser
 
 
