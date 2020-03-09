@@ -221,28 +221,33 @@ class OneHotEncoding:
 
 
 @singledispatch
-def one_hot_encoding(img: typing.Any, classes: typing.List[int]):
-    raise TypeError("Img should be either np.ndarray of torch.Tensor")
+def one_hot_encoding(mask: typing.Any, classes: typing.List[int]):
+    """
+        Function that transforms 1 channel mask to mask with N channels.
+        :param mask: mask to transform
+        :param classes: list of labels present in dataset. It is needed as some instances may not contain all classes.
+        """
+    raise TypeError("Mask should be either np.ndarray of torch.Tensor")
 
 
 @one_hot_encoding.register(np.ndarray)
-def _(img: np.ndarray, classes: typing.List[int]) -> np.ndarray:
+def _(mask: np.ndarray, classes: typing.List[int]) -> np.ndarray:
     if 0 in classes:
         classes.remove(0)  # Without the background label
-    new_shape = [len(classes)] + list(img.shape[1:])
+    new_shape = [len(classes)] + list(mask.shape[1:])
     transformed = np.zeros(new_shape)
     for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
-        transformed[class_id][img[0, ...] == label] = 1
+        transformed[class_id][mask[0, ...] == label] = 1
     return transformed
 
 
 @one_hot_encoding.register(torch.Tensor)
-def _(img: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
+def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
     if 0 in classes:
         classes.remove(0)  # Without the background label
-    new_shape = [len(classes)] + list(img.shape[1:])
+    new_shape = [len(classes)] + list(mask.shape[1:])
     transformed = torch.zeros(new_shape)
 
     for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
-        transformed[class_id][img[0, ...] == label] = 1
+        transformed[class_id][mask[0, ...] == label] = 1
     return transformed

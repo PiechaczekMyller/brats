@@ -66,7 +66,7 @@ class BestModelLogger:
         :param log_directory directory where models will be saved.
     """
 
-    def __init__(self, log_directory):
+    def __init__(self, log_directory: Union[os.PathLike, str]):
         pathlib.Path(log_directory).mkdir(parents=True, exist_ok=True)
         self.log_directory = log_directory
         self.best_score = 0
@@ -91,7 +91,7 @@ class BestStateDictLogger:
         :param log_directory directory where state dicts will be saved.
     """
 
-    def __init__(self, log_directory):
+    def __init__(self, log_directory: Union[os.PathLike, str]):
         pathlib.Path(log_directory).mkdir(parents=True, exist_ok=True)
         self.log_directory = log_directory
         self.best_score = 0
