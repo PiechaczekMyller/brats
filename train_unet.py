@@ -102,7 +102,7 @@ if __name__ == '__main__':
               f"Valid dice non enhancing: {valid_metrics['dice_non_enhancing']:.4f} "
               f"Valid dice enhancing: {valid_metrics['dice_enhancing']:.4f} ", flush=True)
 
-        last_model_logger.log(model, 0)
+        last_model_logger.log(model, "last_epoch")
         last_state_dict_logger.log(model, 0)
         best_model_logger.log(model, 3 - valid_loss)
         best_state_dict_logger.log(model, 3 - valid_loss)

@@ -53,8 +53,8 @@ class ModelLogger:
         pathlib.Path(log_directory).mkdir(parents=True, exist_ok=True)
         self.log_directory = log_directory
 
-    def log(self, model: nn.Module, epoch):
-        model_path = os.path.join(self.log_directory, f"model_{str(epoch).zfill(6)}")
+    def log(self, model: nn.Module, sufix: str):
+        model_path = os.path.join(self.log_directory, f"model_{sufix}")
         with open(model_path, "wb") as file:
             torch.save(model, file)
 
