@@ -63,9 +63,9 @@ if __name__ == '__main__':
     masks_set = datasets.NiftiFolder(masks_paths, masks_transformations)
     combined_set = datasets.CombinedDataset(volumes_set, masks_set)
     with open(args.division_json, "r") as division_file:
-        indeces = json.load(division_file)
-    train_set = Subset(combined_set, indeces["train"])
-    valid_set = Subset(combined_set, indeces["valid"])
+        indices = json.load(division_file)
+    train_set = Subset(combined_set, indices["train"])
+    valid_set = Subset(combined_set, indices["valid"])
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
