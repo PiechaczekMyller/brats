@@ -32,7 +32,7 @@ def dice(prediction: torch.Tensor,
                                   dim=volume_dims)
     score = (2. * intersection) / (union + epsilon)
     score = torch.mean(score, dim=BATCH_DIM)
-    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
+    return score
 
 
 def recall(prediction: torch.Tensor,
@@ -59,7 +59,7 @@ def recall(prediction: torch.Tensor,
     score = true_positives / (
             true_positives + false_negatives + epsilon)
     score = torch.mean(score, dim=BATCH_DIM)
-    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
+    return score
 
 
 def precision(prediction: torch.Tensor,
@@ -86,7 +86,7 @@ def precision(prediction: torch.Tensor,
     score = true_positives / (
             true_positives + false_positive + epsilon)
     score = torch.mean(score, dim=BATCH_DIM)
-    return score if len(score) != ONE_CLASS else score[FIRST_CLASS]
+    return score
 
 
 def f_score(prediction: torch.Tensor,
