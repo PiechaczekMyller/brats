@@ -53,15 +53,15 @@ class TestRecallScore:
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.334),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.334])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.6667),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.6667])),
                               (torch.tensor([[0.0, 1.0, 1.0, 0.0], [0.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.334),
+                               torch.Tensor([0.334])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0], [1.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.6667)
+                               torch.Tensor([0.6667]))
                               ])
     def test_if_returns_expected_values(self, images, target, result):
         assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
@@ -85,14 +85,14 @@ class TestPrecisionScore:
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.5),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.5])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.6667),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.6667])),
                               (torch.tensor([[0.0, 1.0, 1.0, 0.0], [0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]), 0.5),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.5])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0], [1.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.6667)
+                               torch.Tensor([0.6667]))
                               ])
     def test_if_returns_expected_values(self, images, target, result):
         assert np.isclose(self.metric(images.unsqueeze(dim=CHANNEL_DIM),
@@ -117,14 +117,14 @@ class TestFScore:
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.4),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.4])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.6667),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.6667])),
                               (torch.tensor([[0.0, 1.0, 1.0, 0.0], [0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]), 0.4),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.4])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0], [1.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.6667)
+                               torch.Tensor([0.6667]))
                               ])
     def test_if_f1_returns_expected_values(self, images, target, result):
         assert np.isclose(self.metric_beta1(images.unsqueeze(dim=CHANNEL_DIM),
@@ -134,15 +134,15 @@ class TestFScore:
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.3577),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.3577])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 0.6667),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([0.6667])),
                               (torch.tensor([[0.0, 1.0, 1.0, 0.0], [0.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.3577),
+                               torch.Tensor([0.3577])),
                               (torch.tensor([[1.0, 1.0, 1.0, 0.0], [1.0, 1.0, 1.0, 0.0]]),
                                torch.tensor([[1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 0.0, 1.0]]),
-                               0.6667)
+                               torch.Tensor([0.6667]))
                               ])
     def test_if_f2_returns_expected_values(self, images, target, result):
         assert np.isclose(self.metric_beta2(images.unsqueeze(dim=CHANNEL_DIM),
@@ -156,15 +156,15 @@ class TestHausdorffDistance95:
 
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0.0, 1.0, 1.0, 0.0]]),
-                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), 1.0),
+                               torch.tensor([[1.0, 1.0, 0.0, 1.0]]), torch.Tensor([1.0])),
                               (torch.tensor([[1.0, 0.0, 0.0, 0.0]]),
-                               torch.tensor([[0.0, 0.0, 0.0, 1.0]]), 1.414),
+                               torch.tensor([[0.0, 0.0, 0.0, 1.0]]), torch.Tensor([1.414])),
                               (torch.tensor([[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]),
                                torch.tensor([[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0]]),
-                               2),
+                               torch.Tensor([2])),
                               (torch.tensor([[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]),
                                torch.tensor([[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]]),
-                               3.162)
+                               torch.Tensor([3.162]))
                               ])
     def test_if_returns_correct_values(self, images, target, result):
         images = images.view(1, 1, 1, 2, -1)
