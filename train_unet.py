@@ -2,6 +2,7 @@ import argparse
 import enum
 import json
 import os
+import warnings
 
 import torch
 import numpy as np
@@ -19,6 +20,12 @@ from brats.training.runners import run_training_epoch, run_validation_epoch
 from brats.training.stop_conditions import EarlyStopping
 from brats.training.loggers import TensorboardLogger, BestModelLogger, BestStateDictLogger, ModelLogger, \
     StateDictsLogger, log_parameters
+
+try:
+    from apex import amp
+except ImportError:
+    warnings.warn("Apex ModuleNotFoundError, faked version used")
+    from brats.training import fake_apex as amp
 
 
 class Labels(enum.IntEnum):
@@ -40,6 +47,8 @@ if __name__ == '__main__':
         parser.add_argument('--patience', type=int, default=10)
         parser.add_argument('--learning_rate', type=float, default=0.001)
         parser.add_argument('--input_size', type=int, default=240)
+        parser.add_argument('--use_amp', dest='use_amp', action='store_true')
+        parser.set_defaults(use_amp=False)
         return parser
 
 
@@ -82,6 +91,9 @@ if __name__ == '__main__':
     model.to(args.device)
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate)
+    if args.use_amp:
+        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
+
     dice = DiceScore()
     metrics = {"dice": dice}
 

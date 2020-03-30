@@ -1,4 +1,5 @@
 import typing
+import warnings
 
 import numpy as np
 import torch
@@ -6,10 +7,16 @@ from torch import nn
 from torch.optim.optimizer import Optimizer
 from torch.utils import data
 
+try:
+    from apex import amp
+except ImportError:
+    warnings.warn("Apex ModuleNotFoundError, mocked version used")
+    import fake_apex as amp
+
 
 def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer: Optimizer,
                        criterion: typing.Callable,
-                       metrics: typing.Dict[str, typing.Callable], device: str):
+                       metrics: typing.Dict[str, typing.Callable], device: str, use_amp: bool = False):
     """
     Function performing one training epoch.
     Args:
@@ -29,7 +36,11 @@ def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer
         optimizer.zero_grad()
         output = model(input)
         loss = criterion(output, target)
-        loss.backward()
+        if use_amp:
+            with amp.scale_loss(loss, optimizer) as scaled_loss:
+                scaled_loss.backward()
+        else:
+            loss.backward()
         optimizer.step()
         losses.append(loss.item())
         for metric_name in metrics:
