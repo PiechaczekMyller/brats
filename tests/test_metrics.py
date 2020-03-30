@@ -175,19 +175,3 @@ class TestHausdorffDistance95:
         images = torch.ones(*BATCH_DIMS)
         target = torch.ones(*BATCH_DIMS)
         assert self.metric(images, target).shape == torch.Size([])
-
-
-class TestMetricForClass:
-    @pytest.mark.parametrize("metric, class_id, desired_score",
-                             [(metrics.DiceScore(), 0, 0.1818),
-                              (metrics.DiceScore(), 1, 0.3333),
-                              (metrics.DiceScore(), 2, 0.4615),
-                              (metrics.DiceScore(), 3, 0.5714)])
-    def test_if_returns_proper_metric(self, metric, class_id, desired_score):
-        tensor_a = torch.ones(1, 4, 12, 10, 10)
-        tensor_b = torch.cat([torch.ones(1, 1, 12, 10, 10) * 0.1,
-                              torch.ones(1, 1, 12, 10, 10) * 0.2,
-                              torch.ones(1, 1, 12, 10, 10) * 0.3,
-                              torch.ones(1, 1, 12, 10, 10) * 0.4], dim=1)
-        assert np.isclose(metrics.metric_for_class(metric, class_id)(tensor_a, tensor_b).item(), desired_score,
-                          atol=1.e-3)
