@@ -1,3 +1,4 @@
+import enum
 import typing
 from copy import deepcopy
 from functools import singledispatch
@@ -85,20 +86,22 @@ class HistogramMatchingTransformation:
 def reorder(img: typing.Any):
     raise TypeError("Img should be either np.ndarray of torch.Tensor")
 
-H=0
-W=1
-D=2
-C=3
+
+H = 0
+W = 1
+D = 2
+C = 3
+
 
 @reorder.register(np.ndarray)
 def _(img: np.ndarray) -> np.ndarray:
-    transformed = np.moveaxis(img, [H,W,D,C], [2,3,1,0])
+    transformed = np.moveaxis(img, [H, W, D, C], [2, 3, 1, 0])
     return transformed
 
 
 @reorder.register(torch.Tensor)
 def _(img: torch.Tensor) -> torch.Tensor:
-    transformed = img.permute(C,D,H,W)
+    transformed = img.permute(C, D, H, W)
     return transformed
 
 
@@ -200,3 +203,51 @@ class StandardizeVolume:
         stds = tensor.std(dim=[1, 2, 3], keepdims=True)
         transformed = (tensor - means) / stds
         return transformed
+
+
+class OneHotEncoding:
+    """
+    From multiclass label image with one channel it creates N channel image,
+    where each channel is a mask of different class.
+    """
+
+    def __init__(self, classes: typing.List[int]):
+        self.classes = classes
+
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor], ) -> typing.Union[np.ndarray, torch.Tensor]:
+        assert img.ndim == 4, "Tensor should have 4 dimensions (C,D,H,W)"
+        transformed = one_hot_encoding(img, self.classes)
+        return transformed
+
+
+@singledispatch
+def one_hot_encoding(mask: typing.Any, classes: typing.List[int]):
+    """
+        Function that transforms 1 channel mask to mask with N channels.
+        :param mask: mask to transform
+        :param classes: list of labels present in dataset. It is needed as some instances may not contain all classes.
+        """
+    raise TypeError("Mask should be either np.ndarray of torch.Tensor")
+
+
+@one_hot_encoding.register(np.ndarray)
+def _(mask: np.ndarray, classes: typing.List[int]) -> np.ndarray:
+    if 0 in classes:
+        classes.remove(0)  # Without the background label
+    new_shape = [len(classes)] + list(mask.shape[1:])
+    transformed = np.zeros(new_shape)
+    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+        transformed[class_id][mask[0, ...] == label] = 1
+    return transformed
+
+
+@one_hot_encoding.register(torch.Tensor)
+def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
+    if 0 in classes:
+        classes.remove(0)  # Without the background label
+    new_shape = [len(classes)] + list(mask.shape[1:])
+    transformed = torch.zeros(new_shape)
+
+    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+        transformed[class_id][mask[0, ...] == label] = 1
+    return transformed

@@ -19,7 +19,7 @@ class NiftiFolder(data.Dataset):
     (Note that the order of the modalities doesn't matter, however it should be consistent for whole dataset)
     """
 
-    def __init__(self, paths: typing.List[str], transform: typing.List[typing.Callable] = None):
+    def __init__(self, paths: typing.List[str], transform: typing.Callable = None):
         self._files = paths
         self._transform = transform
 
