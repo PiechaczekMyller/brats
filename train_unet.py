@@ -25,7 +25,7 @@ try:
     from apex import amp
 except ImportError:
     warnings.warn("Apex ModuleNotFoundError, faked version used")
-    from brats.training import fake_apex as amp
+    from brats.training import fake_amp as amp
 
 
 class Labels(enum.IntEnum):

@@ -11,7 +11,7 @@ try:
     from apex import amp
 except ImportError:
     warnings.warn("Apex ModuleNotFoundError, mocked version used")
-    import fake_apex as amp
+    import fake_amp as amp
 
 
 def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer: Optimizer,

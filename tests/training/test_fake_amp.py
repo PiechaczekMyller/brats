@@ -1,5 +1,5 @@
 import pytest
-from brats.training import fake_apex
+from brats.training import fake_amp
 
 
 class TestScaleLoss:
@@ -10,7 +10,7 @@ class TestScaleLoss:
                               ([1, "test", 1.2], {"arg1": 1, "arg2": "test", "arg3": 1.2})])
     def test_if_raises(self, args, kwargs):
         with pytest.raises(RuntimeError):
-            fake_apex.scale_loss(*args, **kwargs)
+            fake_amp.scale_loss(*args, **kwargs)
 
 
 class TestInitialize:
@@ -21,4 +21,4 @@ class TestInitialize:
                               ([1, "test", 1.2], {"arg1": 1, "arg2": "test", "arg3": 1.2})])
     def test_if_raises(self, args, kwargs):
         with pytest.raises(RuntimeError):
-            fake_apex.scale_loss(*args, **kwargs)
+            fake_amp.scale_loss(*args, **kwargs)
