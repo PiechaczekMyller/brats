@@ -36,7 +36,7 @@ def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer
             metric_values = [value.item() for value in metrics[metric_name](output, target)]
             out_metrics[metric_name].append(metric_values)
     out_metrics = {metric_name: np.array(out_metrics[metric_name]).mean(axis=0) for metric_name in metrics.keys()}
-    return (np.mean(losses), out_metrics) if losses else (0.0, out_metrics)
+    return np.mean(losses), out_metrics
 
 
 def run_validation_epoch(model: nn.Module, data_loader: data.DataLoader, criterion: typing.Callable,
@@ -65,4 +65,4 @@ def run_validation_epoch(model: nn.Module, data_loader: data.DataLoader, criteri
                 metric_values = [value.item() for value in metrics[metric_name](output, target)]
                 out_metrics[metric_name].append(metric_values)
         out_metrics = {metric_name: np.array(out_metrics[metric_name]).mean(axis=1) for metric_name in metrics.keys()}
-    return (np.mean(losses), out_metrics) if losses else (0.0, out_metrics)
+    return np.mean(losses), out_metrics

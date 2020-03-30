@@ -76,7 +76,7 @@ if __name__ == '__main__':
     valid_set = Subset(combined_set, indices["valid"])
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
 
     model = UNet3D(1, 3).float()
     model.to(args.device)

@@ -106,7 +106,7 @@ class BestStateDictLogger:
             self.best_score = score
             model_path = os.path.join(self.log_directory, f"best_state_dict")
             with open(model_path, "wb") as file:
-                torch.save(model, file)
+                torch.save(model.state_dict, file)
 
 
 def log_parameters(log_directory, parameters):
