@@ -57,8 +57,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
-                                            trfs.Lambda(lambda x: x[3, :, :, :]),
-                                            trfs.Lambda(lambda x: np.expand_dims(x, 0)),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
@@ -88,7 +86,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
 
-    model = UNet3D(1, 3).float()
+    model = UNet3D(4, 3).float()
     model.to(args.device)
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate)
