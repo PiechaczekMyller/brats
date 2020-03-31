@@ -153,7 +153,7 @@ class BinarizationTransformation:
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        transformed = copy(img)
+        transformed = utils.copy(img)
         transformed[transformed > 0] = 1
         return transformed
 
