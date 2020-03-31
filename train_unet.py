@@ -3,6 +3,7 @@ import enum
 import json
 import os
 import warnings
+from time import time
 
 import torch
 import numpy as np
@@ -107,6 +108,7 @@ if __name__ == '__main__':
 
     log_parameters(args.log_dir, args)
     for epoch in range(args.epochs):
+        time_0 = time()
         train_loss, train_metrics = run_training_epoch(model, train_loader, optimizer, criterion, metrics, args.device)
         valid_loss, valid_metrics = run_validation_epoch(model, valid_loader, criterion, metrics, args.device)
         print(f"Epoch: {epoch} "
@@ -114,7 +116,8 @@ if __name__ == '__main__':
               f"Valid loss: {valid_loss:.4f} "
               f"Valid dice edema: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
               f"Valid dice non enhancing: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
-              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} ", flush=True)
+              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
+              f"Time per epoch: {time()-time_0:.4f}s", flush=True)
 
         last_model_logger.log(model, "last_epoch")
         last_state_dict_logger.log(model, 0)
