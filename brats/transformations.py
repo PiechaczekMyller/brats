@@ -238,9 +238,12 @@ def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
 
 
 class CommonTransformation(abc.ABC):
+    """
+    Interface for transformations that are supposed to transform multiple inputs in the same way.
+    """
+
     @abc.abstractmethod
-    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor],
-                 mask: typing.Union[np.ndarray, torch.Tensor]):
+    def __call__(self, imgs: typing.List[typing.Union[np.ndarray, torch.Tensor]]):
         raise NotImplementedError
 
 
@@ -248,19 +251,19 @@ class RandomCrop(CommonTransformation):
     def __init__(self, size: typing.Tuple[int, int]):
         self.size = size
 
-    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor],
-                 mask: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
+    def __call__(self, *imgs: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
         typing.Union[np.ndarray, torch.Tensor],
         typing.Union[np.ndarray, torch.Tensor]]:
-        assert img[0, 0, ...].shape == mask[0, 0, ...].shape
+        assert all(
+            img[0, 0, ...].shape == imgs[0][0, 0, ...].shape for img in imgs), "W and H of all images must be the same"
 
-        max_x = img.shape[2] - self.size[0]
-        max_y = img.shape[3] - self.size[1]
+        max_x = imgs[0].shape[2] - self.size[0]
+        max_y = imgs[0].shape[3] - self.size[1]
         x, y = random.randint(0, max_x), random.randint(0, max_y)
+        transformed = []
+        for img in imgs:
+            transformed_img = utils.copy(img)
+            transformed_img = transformed_img[:, :, x:x + self.size[0], y:y + self.size[1]]
+            transformed.append(transformed_img)
 
-        transformed_img = utils.copy(img)
-        transformed_mask = utils.copy(mask)
-
-        transformed_img = transformed_img[:, :, x:x + self.size[0], y:y + self.size[1]]
-        transformed_mask = transformed_mask[:, :, x:x + self.size[0], y:y + self.size[1]]
-        return transformed_img, transformed_mask
+        return tuple(transformed)

@@ -188,7 +188,26 @@ from brats import transformations as trfs
 #
 
 class TestRandomCrop:
-    @pytest.mark.parametrize("img, mask", [(torch.zeros((4, 20, 240, 240)), torch.zeros((4, 20, 240, 240)))])
-    def test_if_returns_correct_tensors(self, img, mask):
-        transformation = trfs.RandomCrop((10, 10))
-        assert transformation(img, mask)
+    @pytest.mark.parametrize("img, size, desired",
+                             [(torch.zeros((4, 3, 240, 240)), (10, 10), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 240, 240)), (12, 12), torch.zeros((4, 3, 12, 12))),
+                              (torch.zeros((4, 3, 240, 240)), (128, 128), torch.zeros((4, 3, 128, 128))),
+                              (torch.zeros((1, 3, 240, 240)), (128, 128), torch.zeros((1, 3, 128, 128))),
+                              (torch.zeros((1, 1, 240, 240)), (128, 128), torch.zeros((1, 1, 128, 128)))])
+    def test_if_returns_correct_shapes(self, img, size, desired):
+        transformation = trfs.RandomCrop(size)
+        transformed = transformation(img)[0]
+        assert transformed.shape == desired.shape
+
+    @pytest.mark.parametrize("img1, img2, img3",
+                             [(torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 9))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 9, 10))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 9)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 9, 10)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 10, 9)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 9, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))),])
+    def test_if_raises_on_mismatched_shapes(self, img1, img2, img3):
+        transformation = trfs.RandomCrop((10,10))
+        with pytest.raises(AssertionError):
+            transformation(img1, img2, img3)
+
