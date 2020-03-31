@@ -2,6 +2,8 @@ import argparse
 import enum
 import json
 import os
+import warnings
+from time import time
 
 import torch
 import numpy as np
@@ -19,6 +21,12 @@ from brats.training.runners import run_training_epoch, run_validation_epoch
 from brats.training.stop_conditions import EarlyStopping
 from brats.training.loggers import TensorboardLogger, BestModelLogger, BestStateDictLogger, ModelLogger, \
     StateDictsLogger, log_parameters
+
+try:
+    from apex import amp
+except ImportError:
+    warnings.warn("Apex ModuleNotFoundError, faked version used")
+    from brats.training import fake_amp as amp
 
 
 class Labels(enum.IntEnum):
@@ -40,6 +48,8 @@ if __name__ == '__main__':
         parser.add_argument('--patience', type=int, default=10)
         parser.add_argument('--learning_rate', type=float, default=0.001)
         parser.add_argument('--input_size', type=int, default=240)
+        parser.add_argument('--use_amp', dest='use_amp', action='store_true')
+        parser.set_defaults(use_amp=False)
         return parser
 
 
@@ -82,6 +92,9 @@ if __name__ == '__main__':
     model.to(args.device)
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate)
+    if args.use_amp:
+        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
+
     dice = DiceScore()
     metrics = {"dice": dice}
 
@@ -95,6 +108,7 @@ if __name__ == '__main__':
 
     log_parameters(args.log_dir, args)
     for epoch in range(args.epochs):
+        time_0 = time()
         train_loss, train_metrics = run_training_epoch(model, train_loader, optimizer, criterion, metrics, args.device)
         valid_loss, valid_metrics = run_validation_epoch(model, valid_loader, criterion, metrics, args.device)
         print(f"Epoch: {epoch} "
@@ -102,7 +116,8 @@ if __name__ == '__main__':
               f"Valid loss: {valid_loss:.4f} "
               f"Valid dice edema: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
               f"Valid dice non enhancing: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
-              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} ", flush=True)
+              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
+              f"Time per epoch: {time()-time_0:.4f}s", flush=True)
 
         last_model_logger.log(model, "last_epoch")
         last_state_dict_logger.log(model, 0)
