@@ -1,6 +1,8 @@
+import abc
 import enum
+import random
 import typing
-from copy import deepcopy
+import utils
 from functools import singledispatch
 import numpy as np
 import torch
@@ -145,32 +147,14 @@ class AddChannelDimToMaskTransformation:
         return transformed
 
 
-@singledispatch
-def binarize(img: typing.Any):
-    raise TypeError("Img should be either np.ndarray of torch.Tensor")
-
-
-@binarize.register(np.ndarray)
-def _(img: np.ndarray) -> np.ndarray:
-    transformed = np.copy(img)
-    transformed[transformed > 0] = 1
-    return transformed
-
-
-@binarize.register(torch.Tensor)
-def _(img: torch.Tensor) -> torch.Tensor:
-    transformed = img.clone()
-    transformed[transformed > 0] = 1
-    return transformed
-
-
 class BinarizationTransformation:
     """
     Changes image to binary mask, all values above 1 would be changed to 1.
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        transformed = binarize(img)
+        transformed = copy(img)
+        transformed[transformed > 0] = 1
         return transformed
 
 
@@ -251,3 +235,32 @@ def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
     for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
         transformed[class_id][mask[0, ...] == label] = 1
     return transformed
+
+
+class CommonTransformation(abc.ABC):
+    @abc.abstractmethod
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor],
+                 mask: typing.Union[np.ndarray, torch.Tensor]):
+        raise NotImplementedError
+
+
+class RandomCrop(CommonTransformation):
+    def __init__(self, size: typing.Tuple[int, int]):
+        self.size = size
+
+    def __call__(self, img: typing.Union[np.ndarray, torch.Tensor],
+                 mask: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
+        typing.Union[np.ndarray, torch.Tensor],
+        typing.Union[np.ndarray, torch.Tensor]]:
+        assert img[0, 0, ...].shape == mask[0, 0, ...].shape
+
+        max_x = img.shape[2] - self.size[0]
+        max_y = img.shape[3] - self.size[1]
+        x, y = random.randint(0, max_x), random.randint(0, max_y)
+
+        transformed_img = utils.copy(img)
+        transformed_mask = utils.copy(mask)
+
+        transformed_img = transformed_img[:, :, x:x + self.size[0], y:y + self.size[1]]
+        transformed_mask = transformed_mask[:, :, x:x + self.size[0], y:y + self.size[1]]
+        return transformed_img, transformed_mask

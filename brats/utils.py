@@ -1,3 +1,6 @@
+import typing
+from functools import singledispatch
+
 import torch
 import numpy as np
 
@@ -87,3 +90,22 @@ def calculate_false_positives(prediction: torch.Tensor, target: torch.Tensor,
     """
     return ((1 - target) * prediction).sum(dim=dim) if dim is not None else (
             (1 - target) * prediction).sum()
+
+
+@singledispatch
+def copy(tensor: typing.Union[np.ndarray, torch.Tensor]):
+    """
+        Function that returns copy of given input.
+
+    """
+    raise TypeError(f"Type {type(tensor)} not supported")
+
+
+@copy.register(np.ndarray)
+def _(tensor: np.ndarray) -> np.ndarray:
+    return np.copy(tensor)
+
+
+@copy.register(torch.Tensor)
+def _(tensor: torch.Tensor) -> torch.Tensor:
+    return tensor.clone()
