@@ -71,7 +71,8 @@ if __name__ == '__main__':
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           trfs.Lambda(lambda x: x.float())
                                           ])
-    common_transformations = transformations.ComposeCommon([transformations.RandomCrop((args.input_size, args.input_size))])
+    common_transformations = transformations.ComposeCommon(
+        [transformations.RandomCrop((args.input_size, args.input_size))])
 
     volumes_paths, masks_paths = read_dataset_json(args.dataset_json)
     volumes_set = datasets.NiftiFolder(volumes_paths, volumes_transformations)
