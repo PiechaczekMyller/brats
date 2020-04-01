@@ -1,8 +1,7 @@
 import abc
-import enum
 import random
 import typing
-import utils
+from brats import utils
 from functools import singledispatch
 import numpy as np
 import torch
