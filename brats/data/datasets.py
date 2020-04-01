@@ -5,6 +5,8 @@ import typing
 import nibabel as nib
 from torch.utils import data
 
+from brats import transformations
+
 
 class NiftiFolder(data.Dataset):
     """
@@ -47,7 +49,7 @@ class CombinedDataset(data.Dataset):
     On `__getitem__(n)` it returns a tuple containing nth element of each dataset.
     """
 
-    def __init__(self, *datasets: data.Dataset, transform: typing.Callable = None):
+    def __init__(self, *datasets: data.Dataset, transform: transformations.CommonTransformation = None):
         assert all(len(dataset) == len(datasets[0]) for dataset in datasets), "Length of all datasets must be the same"
         self._datasets = datasets
         self._transform = transform
@@ -57,7 +59,7 @@ class CombinedDataset(data.Dataset):
 
     def __getitem__(self, idx: int) -> typing.Tuple[typing.Any, ...]:
         if self._transform:
-            return tuple(self._transform(dataset[idx]) for dataset in self._datasets)
+            return tuple(self._transform(*[dataset[idx] for dataset in self._datasets]))
         else:
             return tuple(dataset[idx] for dataset in self._datasets)
 

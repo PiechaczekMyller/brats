@@ -266,3 +266,23 @@ class RandomCrop(CommonTransformation):
             transformed.append(transformed_img)
 
         return tuple(transformed)
+
+
+class ComposeCommon(CommonTransformation):
+    """
+    Compose multiple transformations into one
+    :param transform: List of transforms to perform.
+    """
+
+    def __init__(self, transforms: typing.List[CommonTransformation]):
+        self.transforms = transforms
+
+    def __call__(self, *imgs: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
+        typing.Union[np.ndarray, torch.Tensor],
+        typing.Union[np.ndarray, torch.Tensor]]:
+        assert all(
+            img[0, 0, ...].shape == imgs[0][0, 0, ...].shape for img in imgs), "W and H of all images must be the same"
+        transformed = [utils.copy(img) for img in imgs]
+        for transform in self.transforms:
+            transformed = transform(*transformed)
+        return transformed

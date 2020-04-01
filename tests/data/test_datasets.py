@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from torchvision.transforms import Lambda
 
+import transformations
 from brats.data import datasets
 
 INPUT_IMAGE_SHAPE = (10, 16, 16, 4)
@@ -73,7 +74,7 @@ class TestCombinedDataset:
             datasets.CombinedDataset(dataset1, dataset2, dataset3)
 
     def test_if_applies_transforms(self, input_directory):
-        transform = Lambda(lambda x: np.pad(x, (2, 2)))
+        transform = transformations.RandomCrop((2, 2))
 
         dataset1 = datasets.NiftiFolder.from_dir(input_directory)
         dataset2 = datasets.NiftiFolder.from_dir(input_directory)
@@ -82,4 +83,4 @@ class TestCombinedDataset:
 
         entry = dataset[0]
         for img in entry:
-            assert np.all(img.shape == np.array(INPUT_IMAGE_SHAPE) + 4)
+            assert np.all(img.shape == np.array((10, 16, 2, 2)))
