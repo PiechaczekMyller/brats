@@ -7,8 +7,6 @@ import medpy.metric.binary as mp
 import brats.utils as utils
 
 BATCH_DIM = 0
-CHANNELS_DIM = 1
-ONE_CLASS = 1
 FIRST_CLASS = 0
 
 
