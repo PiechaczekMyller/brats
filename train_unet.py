@@ -86,7 +86,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
 
-    model = UNet3D(4, 3).float()
+    model = UNet3D(4, 4).float()
     model.to(args.device)
     criterion = DiceLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate)

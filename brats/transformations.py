@@ -215,23 +215,19 @@ def one_hot_encoding(mask: typing.Any, classes: typing.List[int]):
 
 @one_hot_encoding.register(np.ndarray)
 def _(mask: np.ndarray, classes: typing.List[int]) -> np.ndarray:
-    if 0 in classes:
-        classes.remove(0)  # Without the background label
     new_shape = [len(classes)] + list(mask.shape[1:])
     transformed = np.zeros(new_shape)
-    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+    for class_id, label in enumerate(classes):
         transformed[class_id][mask[0, ...] == label] = 1
     return transformed
 
 
 @one_hot_encoding.register(torch.Tensor)
 def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
-    if 0 in classes:
-        classes.remove(0)  # Without the background label
     new_shape = [len(classes)] + list(mask.shape[1:])
     transformed = torch.zeros(new_shape)
 
-    for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
+    for class_id, label in enumerate(classes):
         transformed[class_id][mask[0, ...] == label] = 1
     return transformed
 
