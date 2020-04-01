@@ -47,18 +47,22 @@ class CombinedDataset(data.Dataset):
     On `__getitem__(n)` it returns a tuple containing nth element of each dataset.
     """
 
-    def __init__(self, *datasets: data.Dataset):
+    def __init__(self, *datasets: data.Dataset, transform: typing.Callable = None):
         assert all(len(dataset) == len(datasets[0]) for dataset in datasets), "Length of all datasets must be the same"
-        self.datasets = datasets
+        self._datasets = datasets
+        self._transform = transform
 
     def __len__(self) -> int:
-        return len(self.datasets[0])
+        return len(self._datasets[0])
 
     def __getitem__(self, idx: int) -> typing.Tuple[typing.Any, ...]:
-        return tuple(dataset[idx] for dataset in self.datasets)
+        if self._transform:
+            return tuple(self._transform(dataset[idx]) for dataset in self._datasets)
+        else:
+            return tuple(dataset[idx] for dataset in self._datasets)
 
 
-def read_dataset_json(path_to_json, key = "training"):
+def read_dataset_json(path_to_json, key="training"):
     """
     Reads pairs of images and masks from json file.
     :param path_to_json: Path to the file from decathlon challange

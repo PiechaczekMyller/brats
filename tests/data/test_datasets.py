@@ -71,3 +71,15 @@ class TestCombinedDataset:
         dataset2._files = [dataset2._files[0]]
         with pytest.raises(AssertionError):
             datasets.CombinedDataset(dataset1, dataset2, dataset3)
+
+    def test_if_applies_transforms(self, input_directory):
+        transform = Lambda(lambda x: np.pad(x, (2, 2)))
+
+        dataset1 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset2 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset3 = datasets.NiftiFolder.from_dir(input_directory)
+        dataset = datasets.CombinedDataset(dataset1, dataset2, dataset3, transform=transform)
+
+        entry = dataset[0]
+        for img in entry:
+            assert np.all(img.shape == np.array(INPUT_IMAGE_SHAPE) + 4)
