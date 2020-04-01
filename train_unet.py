@@ -60,9 +60,8 @@ if __name__ == '__main__':
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
-                                            trfs.Lambda(lambda x: F.interpolate(x, size=args.input_size)),
                                             transformations.StandardizeVolume(),
-                                            trfs.Lambda(lambda x: x.float()),
+                                            trfs.Lambda(lambda x: x.float())
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
@@ -70,14 +69,15 @@ if __name__ == '__main__':
                                           transformations.OneHotEncoding([0, 1, 2, 3]),
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
-                                          trfs.Lambda(lambda x: F.interpolate(x, size=args.input_size)),
                                           trfs.Lambda(lambda x: x.float())
                                           ])
+    common_transformations = transformations.ComposeCommon(
+        [transformations.RandomCrop((args.input_size, args.input_size))])
 
     volumes_paths, masks_paths = read_dataset_json(args.dataset_json)
     volumes_set = datasets.NiftiFolder(volumes_paths, volumes_transformations)
     masks_set = datasets.NiftiFolder(masks_paths, masks_transformations)
-    combined_set = datasets.CombinedDataset(volumes_set, masks_set)
+    combined_set = datasets.CombinedDataset(volumes_set, masks_set, transform=common_transformations)
     with open(args.division_json, "r") as division_file:
         indices = json.load(division_file)
     train_set = Subset(combined_set, indices["train"])
