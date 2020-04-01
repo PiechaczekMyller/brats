@@ -69,7 +69,7 @@ class NLLLossOneHot(nn.Module):
         return self.nll_loss(prediction, target)
 
 
-class DiceWithNLL(nn.Module):
+class DiceWithNLLOneHot(nn.Module):
     """
     Compute Dice loss and negative log-likelihood and return the unweighted sum.
     """
