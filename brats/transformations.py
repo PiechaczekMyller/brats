@@ -247,6 +247,11 @@ class CommonTransformation(abc.ABC):
 
 
 class RandomCrop(CommonTransformation):
+    """
+    Extracts random patch from volume of the given size.
+    :param size: Tuple containing sizes (H,W) of the desired patch.
+    """
+
     def __init__(self, size: typing.Tuple[int, int]):
         self.size = size
 
