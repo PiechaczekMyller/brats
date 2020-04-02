@@ -21,14 +21,14 @@ class TestDiceLossOneClass:
         assert np.isclose(losses.DiceLoss()(images, target), 1, atol=1.e-4)
 
     @pytest.mark.parametrize("images, target, result",
-                             [(torch.tensor([[0, 1, 1, 0]]),
-                               torch.tensor([[1, 1, 0, 1]]), 0.6),
-                              (torch.tensor([[1, 1, 1, 0]]),
-                               torch.tensor([[1, 1, 0, 1]]), 0.334),
-                              (torch.tensor([[0, 1, 1, 0], [0, 1, 1, 0]]),
-                               torch.tensor([[1, 1, 0, 1], [1, 1, 0, 1]]), 0.6),
-                              (torch.tensor([[1, 1, 1, 0], [1, 1, 1, 0]]),
-                               torch.tensor([[1, 1, 0, 1], [1, 1, 0, 1]]),
+                             [(torch.tensor([[0., 1., 1., 0]]),
+                               torch.tensor([[1., 1., 0., 1]]), 0.6),
+                              (torch.tensor([[1., 1., 1., 0]]),
+                               torch.tensor([[1., 1., 0., 1]]), 0.334),
+                              (torch.tensor([[0., 1., 1., 0], [0., 1., 1., 0]]),
+                               torch.tensor([[1., 1., 0., 1], [1., 1., 0., 1]]), 0.6),
+                              (torch.tensor([[1., 1., 1., 0], [1., 1., 1., 0]]),
+                               torch.tensor([[1., 1., 0., 1], [1., 1., 0., 1]]),
                                0.334)
                               ])
     def test_if_returns_expected_values(self, images, target, result):
@@ -41,11 +41,11 @@ class TestDiceLossOneClass:
 class TestNLLLossOneHot:
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0., 0.9]]),
-                               torch.tensor([[0, 1]]), 0.3412),
+                               torch.tensor([[0., 1.]]), 0.3412),
                               (torch.tensor([[0., 0.9], [0., 0.9]]),
-                               torch.tensor([[0, 1], [0, 1]]), 0.3412),
+                               torch.tensor([[0., 1.], [0, 1]]), 0.3412),
                               (torch.tensor([[0., 0.9, 0], [0.9, 0., 0.], [0., 0., 0.9]]),
-                               torch.tensor([[0, 1, 0], [0, 0, 1], [0, 0, 1]]), 0.8951)])
+                               torch.tensor([[0., 1., 0.], [0., 0., 1.], [0., 0., 1.]]), 0.8951)])
     def test_if_returns_correct_values(self, images, target, result):
         images = torch.nn.Softmax(dim=1)(images)
         assert np.isclose(losses.NLLLossOneHot()(images, target), result,
@@ -55,13 +55,13 @@ class TestNLLLossOneHot:
 class TestDiceWithNLL:
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0., 0.9]]),
-                               torch.tensor([[0, 1]]), 1.5101),
+                               torch.tensor([[0., 1.]]), 1.5101),
                               (torch.tensor([[0., 0.9], [0., 0.9]]),
-                               torch.tensor([[0, 1], [0, 1]]), 1.5101),
+                               torch.tensor([[0., 1.], [0., 1.]]), 1.5101),
                               (torch.tensor([[0., 0.9, 0], [0.0, 0., 1.], [0., 0., 0.9]]),
-                               torch.tensor([[0, 1, 0], [0, 0, 1], [0, 0, 1]]), 2.8629),
+                               torch.tensor([[0., 1., 0.], [0., 0., 1.], [0., 0., 1.]]), 2.8629),
                               (torch.tensor([[0., 0.9, 0, 0.1], [0.0, 0.8, 0., 1.]]),
-                               torch.tensor([[0, 1, 0, 0], [0, 0, 0, 1]]), 4.2893)
+                               torch.tensor([[0., 1., 0., 0.], [0., 0., 0., 1.]]), 4.2893)
                              ])
     def test_if_returns_correct_values(self, images, target, result):
         images = images.unsqueeze(dim=2)
