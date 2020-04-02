@@ -20,7 +20,7 @@ from brats.data import datasets
 from brats.training.runners import run_training_epoch, run_validation_epoch
 from brats.training.stop_conditions import EarlyStopping
 from brats.training.loggers import TensorboardLogger, BestModelLogger, BestStateDictLogger, ModelLogger, \
-    StateDictsLogger, log_parameters
+    StateDictsLogger, log_parameters, log_git_info
 
 try:
     from apex import amp
@@ -105,6 +105,7 @@ if __name__ == '__main__':
     early_stopping = EarlyStopping(args.patience)
 
     log_parameters(args.log_dir, args)
+    log_git_info(args.log_dir)
     for epoch in range(args.epochs):
         time_0 = time()
         train_loss, train_metrics = run_training_epoch(model, train_loader, optimizer, criterion, metrics, args.device)
