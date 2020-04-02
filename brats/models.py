@@ -3,34 +3,6 @@ from torch import nn
 
 
 class UNet3DBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv1 = nn.Conv3d(in_channels=in_channels,
-                               out_channels=out_channels,
-                               kernel_size=3,
-                               padding=1,
-                               bias=False)
-        self.bn1 = nn.InstanceNorm3d(out_channels)
-        self.act1 = nn.LeakyReLU()
-        self.conv2 = nn.Conv3d(in_channels=out_channels,
-                               out_channels=out_channels,
-                               kernel_size=3,
-                               padding=1,
-                               bias=False)
-        self.bn2 = nn.InstanceNorm3d(out_channels)
-        self.act2 = nn.LeakyReLU()
-
-    def forward(self, input):
-        out = self.conv1(input)
-        out = self.bn1(out)
-        out = self.act1(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.act2(out)
-        return out
-
-
-class Bottleneck(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels):
         super().__init__()
         self.conv1 = nn.Conv3d(in_channels=in_channels,
@@ -63,25 +35,25 @@ class UNet3D(nn.Module):
         super().__init__()
 
         features = init_features
-        self.encoder1 = UNet3DBlock(in_channels, features)
+        self.encoder1 = UNet3DBlock(in_channels, features, features)
         self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder2 = UNet3DBlock(features, features * 2)
+        self.encoder2 = UNet3DBlock(features, features, features * 2)
         self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder3 = UNet3DBlock(features * 2, features * 4)
+        self.encoder3 = UNet3DBlock(features * 2, features * 2, features * 4)
         self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder4 = UNet3DBlock(features * 4, features * 8)
+        self.encoder4 = UNet3DBlock(features * 4, features * 4, features * 8)
         self.pool4 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
 
-        self.bottleneck = Bottleneck(features * 8, features * 16, features * 8)
+        self.bottleneck = UNet3DBlock(features * 8, features * 16, features * 8)
 
         self.upconv4 = nn.Upsample(scale_factor=2, mode="trilinear")
-        self.decoder4 = UNet3DBlock((features * 8) * 2, features * 4)
+        self.decoder4 = UNet3DBlock((features * 8) * 2, features * 4, features * 4)
         self.upconv3 = nn.Upsample(scale_factor=2, mode="trilinear")
-        self.decoder3 = UNet3DBlock((features * 4) * 2, features * 2)
+        self.decoder3 = UNet3DBlock((features * 4) * 2, features * 2, features * 2)
         self.upconv2 = nn.Upsample(scale_factor=2, mode="trilinear")
-        self.decoder2 = UNet3DBlock((features * 2) * 2, features)
+        self.decoder2 = UNet3DBlock((features * 2) * 2, features, features)
         self.upconv1 = nn.Upsample(scale_factor=2, mode="trilinear")
-        self.decoder1 = UNet3DBlock(features * 2, features)
+        self.decoder1 = UNet3DBlock(features * 2, features, features)
         self.mapper = nn.Conv3d(in_channels=features, out_channels=out_channels, kernel_size=1)
 
     def forward(self, input):
