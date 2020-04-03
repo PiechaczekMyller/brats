@@ -52,7 +52,7 @@ class TestNLLLossOneHot:
                           atol=1.e-4)
 
 
-class TestDiceWithNLL:
+class TestComposedLoss:
     @pytest.mark.parametrize("images, target, result",
                              [(torch.tensor([[0., 0.9]]),
                                torch.tensor([[0., 1.]]), 1.5101),
@@ -63,9 +63,27 @@ class TestDiceWithNLL:
                               (torch.tensor([[0., 0.9, 0, 0.1], [0.0, 0.8, 0., 1.]]),
                                torch.tensor([[0., 1., 0., 0.], [0., 0., 0., 1.]]), 4.2893)
                              ])
-    def test_if_returns_correct_values(self, images, target, result):
+    def test_if_returns_correct_values_without_weights(self, images, target, result):
         images = images.unsqueeze(dim=2)
         target = target.unsqueeze(dim=2)
         images = torch.nn.Softmax(dim=1)(images)
-        assert np.isclose(losses.DiceWithNLLOneHot()(images, target), result,
-                          atol=1.e-4)
+        loss = losses.ComposedLoss([losses.DiceLoss(), losses.NLLLossOneHot()])
+        assert np.isclose(loss(images, target), result, atol=1.e-4)
+
+    @pytest.mark.parametrize("images, target, weights, result",
+                             [(torch.tensor([[0., 0.9]]),
+                               torch.tensor([[0., 1.]]), [0.5, 0.5], 0.755),
+                              (torch.tensor([[0., 0.9], [0., 0.9]]),
+                               torch.tensor([[0., 1.], [0., 1.]]), [0.3, 0.7], 0.5895),
+                              (torch.tensor([[0., 0.9, 0], [0.0, 0., 1.], [0., 0., 0.9]]),
+                               torch.tensor([[0., 1., 0.], [0., 0., 1.], [0., 0., 1.]]), [1., 0.], 2.2823),
+                              (torch.tensor([[0., 0.9, 0, 0.1], [0.0, 0.8, 0., 1.]]),
+                               torch.tensor([[0., 1., 0., 0.], [0., 0., 0., 1.]]), [0., 1], 0.8772)
+                             ])
+    def test_if_returns_correct_values_with_weights(self, images, target, weights, result):
+        images = images.unsqueeze(dim=2)
+        target = target.unsqueeze(dim=2)
+        images = torch.nn.Softmax(dim=1)(images)
+        loss = losses.ComposedLoss([losses.DiceLoss(), losses.NLLLossOneHot()],
+                                   weights=weights)
+        assert np.isclose(loss(images, target), result, atol=1.e-4)

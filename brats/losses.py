@@ -1,5 +1,7 @@
+import abc
+import typing
+
 import torch
-import torch.nn as nn
 
 import brats.functional as F
 
@@ -7,7 +9,18 @@ ONE_CLASS = 1
 CLASS_DIM = 1
 
 
-class DiceLoss(nn.Module):
+class Loss(abc.ABC):
+    """
+    Interface for loss
+    """
+
+    @abc.abstractmethod
+    def __call__(self, prediction: torch.Tensor,
+                 target: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+
+class DiceLoss(Loss):
     """
     Compute Dice Loss calculated as 1 - dice_score for each class and sum the
     result..
@@ -37,7 +50,7 @@ class DiceLoss(nn.Module):
         return torch.sum(1 - F.dice(prediction, target, self.epsilon))
 
 
-class NLLLossOneHot(nn.Module):
+class NLLLossOneHot(Loss):
     """
     Compute negative log-likelihood loss for one hot encoded targets.
     """
@@ -69,22 +82,24 @@ class NLLLossOneHot(nn.Module):
         return self.nll_loss(prediction, target)
 
 
-class DiceWithNLLOneHot(nn.Module):
+class ComposedLoss(Loss):
     """
-    Compute Dice loss and negative log-likelihood and return the unweighted sum.
+    Compute weighted sum on provided losses
     """
-
-    def __init__(self, epsilon: float = 1e-6, *args, **kwargs):
+    def __init__(self, losses: typing.List[Loss],
+                 weights: typing.List[float] = None):
         """
         Args:
-            epsilon: smooth factor to prevent division by zero
-            *args: Arguments accepted by the torch.nn.NLLLoss() constructor
-            **kwargs: Keyword arguments accepted by the torch.nn.NLLLoss()
-                    constructor
+            losses: A list of losses to use.
+            weights: Weights for each loss.
         """
-        super().__init__()
-        self.epsilon = epsilon
-        self.nll_loss = NLLLossOneHot(*args, **kwargs)
+        if weights is not None:
+            assert len(losses) == len(
+                weights), "Number of losses should be the same as number of weights"
+            self.weights = weights
+        else:
+            self.weights = [1. for _ in range(len(losses))]
+        self.losses = losses
 
     def __call__(self, prediction: torch.Tensor,
                  target: torch.Tensor) -> torch.Tensor:
@@ -94,10 +109,10 @@ class DiceWithNLLOneHot(nn.Module):
                 Dimensions - (Batch, Channels, Depth, Height, Width)
             target: labels. The classes (channels) should be one-hot encoded
                 Dimensions - (Batch, Channels, Depth, Height, Width)
-
         Returns:
-            torch.Tensor: Computed Dice Loss summed with Cross Entropy Loss
+            Weighted sum of provided losses
         """
-        return torch.sum(
-            1 - F.dice(prediction, target, self.epsilon)) + self.nll_loss(
-            prediction, target)
+        weighted_sum = torch.tensor(0., device=prediction.device)
+        for i, loss in enumerate(self.losses):
+            weighted_sum += loss(prediction, target) * self.weights[i]
+        return weighted_sum
