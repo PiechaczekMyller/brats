@@ -13,7 +13,7 @@ from torch.utils.data import Subset
 from torchvision import transforms as trfs
 from brats import transformations
 from brats.data.datasets import read_dataset_json
-from brats.losses import DiceLoss
+from brats.losses import DiceLoss, ComposedLoss, NLLLossOneHot
 from brats.metrics import DiceScore
 from brats.models import UNet3D
 from brats.data import datasets
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
-                                            transformations.StandardizeVolume(),
+                                            transformations.StandardizeVolumeWithFilter(0),
                                             trfs.Lambda(lambda x: x.float())
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
@@ -89,7 +89,10 @@ if __name__ == '__main__':
 
     model = UNet3D(4, 4).float()
     model.to(args.device)
-    criterion = DiceLoss()
+    dice_loss = DiceLoss()
+    nll_loss = NLLLossOneHot()
+
+    criterion = ComposedLoss([dice_loss, nll_loss])
     optimizer = optim.Adam(model.parameters(), args.learning_rate)
     if args.use_amp:
         model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
