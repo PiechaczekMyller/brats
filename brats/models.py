@@ -3,22 +3,22 @@ from torch import nn
 
 
 class UNet3DBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, mid_channels, out_channels):
         super().__init__()
         self.conv1 = nn.Conv3d(in_channels=in_channels,
-                               out_channels=out_channels,
+                               out_channels=mid_channels,
                                kernel_size=3,
                                padding=1,
                                bias=False)
         self.bn1 = nn.InstanceNorm3d(out_channels)
-        self.act1 = nn.PReLU()
-        self.conv2 = nn.Conv3d(in_channels=out_channels,
+        self.act1 = nn.LeakyReLU()
+        self.conv2 = nn.Conv3d(in_channels=mid_channels,
                                out_channels=out_channels,
                                kernel_size=3,
                                padding=1,
                                bias=False)
         self.bn2 = nn.InstanceNorm3d(out_channels)
-        self.act2 = nn.PReLU()
+        self.act2 = nn.LeakyReLU()
 
     def forward(self, input):
         out = self.conv1(input)
@@ -35,25 +35,25 @@ class UNet3D(nn.Module):
         super().__init__()
 
         features = init_features
-        self.encoder1 = UNet3DBlock(in_channels, features)
+        self.encoder1 = UNet3DBlock(in_channels, features, features)
         self.pool1 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder2 = UNet3DBlock(features, features * 2)
+        self.encoder2 = UNet3DBlock(features, features * 2, features * 2)
         self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder3 = UNet3DBlock(features * 2, features * 4)
+        self.encoder3 = UNet3DBlock(features * 2, features * 4, features * 4)
         self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.encoder4 = UNet3DBlock(features * 4, features * 8)
+        self.encoder4 = UNet3DBlock(features * 4, features * 8, features * 8)
         self.pool4 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
 
-        self.bottleneck = UNet3DBlock(features * 8, features * 16)
+        self.bottleneck = UNet3DBlock(features * 8, features * 16, features * 16)
 
         self.upconv4 = nn.ConvTranspose3d(features * 16, features * 8, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.decoder4 = UNet3DBlock((features * 8) * 2, features * 8)
+        self.decoder4 = UNet3DBlock((features * 8) * 2, features * 8, features * 8)
         self.upconv3 = nn.ConvTranspose3d(features * 8, features * 4, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.decoder3 = UNet3DBlock((features * 4) * 2, features * 4)
+        self.decoder3 = UNet3DBlock((features * 4) * 2, features * 4, features * 4)
         self.upconv2 = nn.ConvTranspose3d(features * 4, features * 2, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.decoder2 = UNet3DBlock((features * 2) * 2, features * 2)
+        self.decoder2 = UNet3DBlock((features * 2) * 2, features * 2, features * 2)
         self.upconv1 = nn.ConvTranspose3d(features * 2, features, kernel_size=(2, 2, 2), stride=(2, 2, 2))
-        self.decoder1 = UNet3DBlock(features * 2, features)
+        self.decoder1 = UNet3DBlock(features * 2, features, features)
         self.mapper = nn.Conv3d(in_channels=features, out_channels=out_channels, kernel_size=1)
 
     def forward(self, input):
@@ -82,4 +82,5 @@ class UNet3D(nn.Module):
         dec1 = self.decoder1(dec1)
 
         maps = self.mapper(dec1)
-        return torch.sigmoid(maps)
+        output = torch.softmax(maps, 1)
+        return output
