@@ -1,6 +1,7 @@
-import enum
+import abc
+import random
 import typing
-from copy import deepcopy
+from brats import utils
 from functools import singledispatch
 import numpy as np
 import torch
@@ -145,32 +146,14 @@ class AddChannelDimToMaskTransformation:
         return transformed
 
 
-@singledispatch
-def binarize(img: typing.Any):
-    raise TypeError("Img should be either np.ndarray of torch.Tensor")
-
-
-@binarize.register(np.ndarray)
-def _(img: np.ndarray) -> np.ndarray:
-    transformed = np.copy(img)
-    transformed[transformed > 0] = 1
-    return transformed
-
-
-@binarize.register(torch.Tensor)
-def _(img: torch.Tensor) -> torch.Tensor:
-    transformed = img.clone()
-    transformed[transformed > 0] = 1
-    return transformed
-
-
 class BinarizationTransformation:
     """
     Changes image to binary mask, all values above 1 would be changed to 1.
     """
 
     def __call__(self, img: typing.Union[np.ndarray, torch.Tensor]) -> typing.Union[np.ndarray, torch.Tensor]:
-        transformed = binarize(img)
+        transformed = utils.copy(img)
+        transformed[transformed > 0] = 1
         return transformed
 
 
@@ -251,3 +234,60 @@ def _(mask: torch.Tensor, classes: typing.List[int]) -> torch.Tensor:
     for class_id, label in enumerate(filter(lambda label: label != 0, classes)):
         transformed[class_id][mask[0, ...] == label] = 1
     return transformed
+
+
+class CommonTransformation(abc.ABC):
+    """
+    Interface for transformations that are supposed to transform multiple inputs in the same way.
+    """
+
+    @abc.abstractmethod
+    def __call__(self, imgs: typing.List[typing.Union[np.ndarray, torch.Tensor]]):
+        raise NotImplementedError
+
+
+class RandomCrop(CommonTransformation):
+    """
+    Extracts random patch from volume of the given size.
+    :param size: Tuple containing sizes (H,W) of the desired patch.
+    """
+
+    def __init__(self, size: typing.Tuple[int, int]):
+        self.size = size
+
+    def __call__(self, *imgs: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
+        typing.Union[np.ndarray, torch.Tensor],
+        typing.Union[np.ndarray, torch.Tensor]]:
+        assert all(
+            img[0, 0, ...].shape == imgs[0][0, 0, ...].shape for img in imgs), "W and H of all images must be the same"
+
+        max_x = imgs[0].shape[2] - self.size[0]
+        max_y = imgs[0].shape[3] - self.size[1]
+        x, y = random.randint(0, max_x), random.randint(0, max_y)
+        transformed = []
+        for img in imgs:
+            transformed_img = utils.copy(img)
+            transformed_img = transformed_img[:, :, x:x + self.size[0], y:y + self.size[1]]
+            transformed.append(transformed_img)
+
+        return tuple(transformed)
+
+
+class ComposeCommon(CommonTransformation):
+    """
+    Compose multiple transformations into one
+    :param transform: List of transforms to perform.
+    """
+
+    def __init__(self, transforms: typing.List[CommonTransformation]):
+        self.transforms = transforms
+
+    def __call__(self, *imgs: typing.Union[np.ndarray, torch.Tensor]) -> typing.Tuple[
+        typing.Union[np.ndarray, torch.Tensor],
+        typing.Union[np.ndarray, torch.Tensor]]:
+        assert all(
+            img[0, 0, ...].shape == imgs[0][0, 0, ...].shape for img in imgs), "W and H of all images must be the same"
+        transformed = [utils.copy(img) for img in imgs]
+        for transform in self.transforms:
+            transformed = transform(*transformed)
+        return transformed

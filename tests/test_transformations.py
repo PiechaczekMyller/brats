@@ -183,3 +183,69 @@ class TestOneHotEncoding:
     def test_if_returns_correct_tensors(self, input, n_classes):
         transformation = trfs.OneHotEncoding([n for n in range(n_classes)])
         assert transformation(input).shape == (n_classes - 1, 10, 4, 4)
+
+
+class TestRandomCrop:
+    @pytest.mark.parametrize("img, size, desired",
+                             [(torch.zeros((4, 3, 50, 50)), (10, 10), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 50, 50)), (12, 12), torch.zeros((4, 3, 12, 12))),
+                              (torch.zeros((4, 3, 240, 240)), (128, 128), torch.zeros((4, 3, 128, 128))),
+                              (torch.zeros((1, 3, 240, 240)), (128, 128), torch.zeros((1, 3, 128, 128))),
+                              (torch.zeros((1, 1, 240, 240)), (128, 128), torch.zeros((1, 1, 128, 128))),
+                              (np.zeros((4, 3, 50, 50)), (10, 10), np.zeros((4, 3, 10, 10))),
+                              (np.zeros((4, 3, 50, 50)), (12, 12), np.zeros((4, 3, 12, 12))),
+                              (np.zeros((4, 3, 240, 240)), (128, 128), np.zeros((4, 3, 128, 128))),
+                              (np.zeros((1, 3, 240, 240)), (128, 128), np.zeros((1, 3, 128, 128))),
+                              (np.zeros((1, 1, 240, 240)), (128, 128), np.zeros((1, 1, 128, 128)))
+                              ])
+    def test_if_returns_correct_shapes(self, img, size, desired):
+        transformation = trfs.RandomCrop(size)
+        transformed = transformation(img)[0]
+        assert transformed.shape == desired.shape
+
+    @pytest.mark.parametrize("img1, img2, img3",
+                             [(torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 9))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 9, 10))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 9)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 9, 10)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 10, 9)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))),
+                              (torch.zeros((4, 3, 9, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))),
+                              (np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 9))),
+                              (np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 9, 10))),
+                              (np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 9)), np.zeros((4, 3, 10, 10))),
+                              (np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 9, 10)), np.zeros((4, 3, 10, 10))),
+                              (np.zeros((4, 3, 10, 9)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))),
+                              (np.zeros((4, 3, 9, 10)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)))
+                              ])
+    def test_if_raises_on_mismatched_shapes(self, img1, img2, img3):
+        transformation = trfs.RandomCrop((10, 10))
+        with pytest.raises(AssertionError):
+            transformation(img1, img2, img3)
+
+    @pytest.mark.parametrize("imgs",
+                             [
+                                 [torch.zeros((4, 3, 10, 10))],
+                                 [torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
+                                 [torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))]
+                             ])
+    def test_if_processes_variadic_arguments(self, imgs):
+        transformation = trfs.RandomCrop((5, 5))
+        desired = torch.zeros((4, 3, 5, 5))
+        assert all([img.shape == desired.shape for img in transformation(*imgs)])
+
+    @pytest.mark.parametrize("imgs",
+                             [
+                                 [torch.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10))],
+                                 [torch.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
+                                 [np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))]
+                             ])
+    def test_if_processes_variadic_types(self, imgs):
+        transformation = trfs.RandomCrop((5, 5))
+        desired_shape = (4, 3, 5, 5)
+        assert all([tuple(img.shape) == desired_shape for img in transformation(*imgs)])

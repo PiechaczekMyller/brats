@@ -51,7 +51,7 @@ class TestCalculateFalseNegatives:
                == batch_size[0]
 
     @pytest.mark.parametrize("x1, x2, result", [(torch.tensor([1, 1]),
-                                                 torch.tensor([1, 1.]), 0),
+                                                 torch.tensor([1, 1]), 0),
                                                 (torch.tensor([1, 0, 1, 0]),
                                                  torch.tensor([0, 1, 0, 0]), 1),
                                                 (torch.tensor([1, 1, 0, 0]),
@@ -73,7 +73,7 @@ class TestCalculateFalsePositives:
                batch_size[0]
 
     @pytest.mark.parametrize("x1, x2, result", [(torch.tensor([1, 1]),
-                                                 torch.tensor([1, 1.]), 0),
+                                                 torch.tensor([1, 1]), 0),
                                                 (torch.tensor([1, 0, 1, 0]),
                                                  torch.tensor([0, 1, 0, 0]), 2),
                                                 (torch.tensor([1, 1, 0, 0]),
@@ -95,7 +95,7 @@ class TestIntersection:
                batch_size[0]
 
     @pytest.mark.parametrize("x1, x2, result", [(torch.tensor([1, 1]),
-                                                 torch.tensor([1, 1.]), 2),
+                                                 torch.tensor([1, 1]), 2),
                                                 (torch.tensor([1, 0, 1, 0]),
                                                  torch.tensor([0, 1, 0, 0]), 0),
                                                 (torch.tensor([1, 1, 0, 0]),
@@ -127,3 +127,15 @@ class TestUnion:
                                                  4)])
     def test_if_returns_correct_values(self, x1, x2, result):
         assert utils.calculate_union(x1, x2) == result
+
+
+class TestCopy:
+    @pytest.mark.parametrize("img", [torch.tensor([1, 1]),
+                                     np.ndarray([1, 1]),
+                                     torch.zeros((3, 4, 10, 10)),
+                                     np.zeros((3, 4, 10, 10))])
+    def test_if_returns_correct_values(self, img):
+        naive_copy = img
+        copy = utils.copy(img)
+        assert naive_copy is img
+        assert copy is not img
