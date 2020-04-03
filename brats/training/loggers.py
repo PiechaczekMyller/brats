@@ -8,6 +8,8 @@ from typing import Union
 import tensorboardX
 from torch import nn
 
+import git
+
 
 class TensorboardLogger:
     """
@@ -119,3 +121,18 @@ def log_parameters(log_directory, parameters):
     pathlib.Path(log_directory).mkdir(parents=True, exist_ok=True)
     with open(os.path.join(log_directory, "parameters.json"), 'w') as fp:
         json.dump(vars(parameters), fp)
+
+
+def log_git_info(log_directory):
+    """
+    Logs info about current commit hash, branch etc.
+    Args:
+        :param log_directory: Directory where info will be saved
+    """
+    repo = git.Repo(search_parent_directories=True)
+    git_info = {'origin': repo.remotes.origin.url,
+                'branch': repo.active_branch.name,
+                'sha': repo.head.object.hexsha}
+    with open(os.path.join(log_directory, "git_info.json"), 'w') as fp:
+        json.dump(git_info, fp)
+
