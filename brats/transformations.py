@@ -6,7 +6,6 @@ from functools import singledispatch
 import numpy as np
 import torch
 from torch.nn import functional as F
-from utils import copy
 
 CHANNELS_IDX = 3
 
