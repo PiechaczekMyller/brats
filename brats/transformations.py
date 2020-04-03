@@ -182,10 +182,34 @@ class StandardizeVolume:
     """
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
-        means = tensor.mean(dim=[1, 2, 3], keepdims=True)
-        stds = tensor.std(dim=[1, 2, 3], keepdims=True)
+        means = tensor.mean(dim=(1, 2, 3), keepdims=True)
+        stds = tensor.std(dim=(1, 2, 3), keepdims=True)
         transformed = (tensor - means) / stds
         return transformed
+
+
+class StandardizeVolumeWithFilter:
+    """
+    Performs standardization with filtering on the volume
+    (mean -> 0, std -> 1 with standard metrics)
+    Standardization is done on the volumetric dimensions,
+    if multiple channels are given, standardization is done channel-wise.
+    """
+
+    def __init__(self, value_to_filter: float):
+        self.value_to_filter = value_to_filter
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        means = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
+        stds = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
+        for channel_id in range(tensor.shape[0]):
+            means[channel_id, ...] = self._filter(tensor[channel_id]).mean()
+            stds[channel_id, ...] = self._filter(tensor[channel_id]).std()
+        transformed = (tensor - means) / stds
+        return transformed
+
+    def _filter(self, tensor: torch.Tensor) -> torch.Tensor:
+        return tensor[tensor != self.value_to_filter]
 
 
 class OneHotEncoding:
