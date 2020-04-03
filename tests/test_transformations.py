@@ -177,6 +177,24 @@ class TestStandardizeVolume:
         assert float(out.std()) == pytest.approx(1, abs=0.001)
 
 
+class TestStandardizeVolumeWithFilter:
+    def test_if_standardize_tensor(self):
+        transformation = trfs.StandardizeVolumeWithFilter(0)
+        input = torch.randn((3, 15, 10, 10)) * 2.3 + 1.4
+        out = transformation(input)
+        assert float(out.mean()) == pytest.approx(0, abs=0.001)
+        assert float(out.std()) == pytest.approx(1, abs=0.001)
+
+    @pytest.mark.parametrize("input, value_to_filter, unique",
+                             [(torch.tensor([1, 2, 3, 4]), 2, torch.tensor([1, 3, 4])),
+                              (torch.tensor([[1, 2, 3, 4], [1, 2, 3, 4]]), 2, torch.tensor([1, 3, 4])),
+                              (torch.tensor([[1, 2, 3, 4], [1, 2, 3, 4]]), 5, torch.tensor([1, 2, 3, 4]))
+                              ])
+    def test_if_filter_removes_values(self, input, value_to_filter, unique):
+        transformation = trfs.StandardizeVolumeWithFilter(value_to_filter)
+        assert torch.all(torch.unique(transformation._filter(input)) == unique)
+
+
 class TestOneHotEncoding:
     @pytest.mark.parametrize("input, n_classes",
                              [(torch.cat([torch.ones((1, 10, 4, 4)) * x for x in range(n)]), n) for n in range(2, 30)])
@@ -226,7 +244,8 @@ class TestRandomCrop:
                              [
                                  [torch.zeros((4, 3, 10, 10))],
                                  [torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
-                                 [torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10))],
+                                 [torch.zeros((4, 3, 10, 10)), torch.zeros((4, 3, 10, 10)),
+                                  torch.zeros((4, 3, 10, 10))],
                                  [np.zeros((4, 3, 10, 10))],
                                  [np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))],
                                  [np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10)), np.zeros((4, 3, 10, 10))]
