@@ -207,8 +207,9 @@ class StandardizeVolumeWithFilter:
         means = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
         stds = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
         for channel_id in range(tensor.shape[0]):
-            means[channel_id, ...] = self._filter(tensor[channel_id]).mean()
-            stds[channel_id, ...] = self._filter(tensor[channel_id]).std()
+            filtered = self._filter(tensor[channel_id])
+            means[channel_id, ...] = filtered.mean()
+            stds[channel_id, ...] = filtered.std()
         transformed = (tensor - means) / (stds + self.epsilon)
         return transformed
 
