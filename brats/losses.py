@@ -55,15 +55,17 @@ class NLLLossOneHot(Loss):
     Compute negative log-likelihood loss for one hot encoded targets.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, epsilon: float = 1e-12, *args, **kwargs):
         """
 
         Args:
+            epsilon: Epsilon value to prevent log(0)
             *args: Arguments accepted by the torch.nn.NLLLoss() constructor
             **kwargs: Keyword arguments accepted by the torch.nn.NLLLoss()
                     constructor
         """
         super().__init__()
+        self.epsilon = epsilon
         self.nll_loss = torch.nn.NLLLoss(*args, **kwargs)
 
     def __call__(self, prediction: torch.Tensor,
@@ -78,7 +80,7 @@ class NLLLossOneHot(Loss):
             torch.Tensor: Computed NLL Loss
         """
         target = torch.argmax(target, dim=CLASS_DIM)
-        prediction = torch.log(prediction)
+        prediction = torch.log(prediction + self.epsilon)
         return self.nll_loss(prediction, target)
 
 
@@ -86,6 +88,7 @@ class ComposedLoss(Loss):
     """
     Compute weighted sum on provided losses
     """
+
     def __init__(self, losses: typing.List[Loss],
                  weights: typing.List[float] = None):
         """
