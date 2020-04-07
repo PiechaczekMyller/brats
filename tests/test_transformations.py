@@ -176,6 +176,14 @@ class TestStandardizeVolume:
         assert float(out.mean()) == pytest.approx(0, abs=0.001)
         assert float(out.std()) == pytest.approx(1, abs=0.001)
 
+    def test_if_epsilon_handles_nans(self):
+        input = torch.zeros(3, 5, 4, 4)
+
+        transformation = trfs.StandardizeVolume(epsilon=0)
+        assert torch.any(torch.isnan(transformation(input)))
+        transformation.epsilon = 1e-6
+        assert not torch.any(torch.isnan(transformation(input)))
+
 
 class TestStandardizeVolumeWithFilter:
     def test_if_standardize_tensor(self):
@@ -184,6 +192,14 @@ class TestStandardizeVolumeWithFilter:
         out = transformation(input)
         assert float(out.mean()) == pytest.approx(0, abs=0.001)
         assert float(out.std()) == pytest.approx(1, abs=0.001)
+
+    def test_if_epsilon_handles_nans(self):
+        input = torch.zeros(3, 5, 4, 4)
+
+        transformation = trfs.StandardizeVolumeWithFilter(1, epsilon=0)
+        assert torch.any(torch.isnan(transformation(input)))
+        transformation.epsilon = 1e-6
+        assert not torch.any(torch.isnan(transformation(input)))
 
     @pytest.mark.parametrize("input, value_to_filter, unique",
                              [(torch.tensor([1, 2, 3, 4]), 2, torch.tensor([1, 3, 4])),

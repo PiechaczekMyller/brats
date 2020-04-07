@@ -181,10 +181,13 @@ class StandardizeVolume:
     if multiple channels are given, standardization is done channel-wise.
     """
 
+    def __init__(self, epsilon: float = 1e-6):
+        self.epsilon = epsilon
+
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         means = tensor.mean(dim=(1, 2, 3), keepdims=True)
         stds = tensor.std(dim=(1, 2, 3), keepdims=True)
-        transformed = (tensor - means) / stds
+        transformed = (tensor - means) / (stds + self.epsilon)
         return transformed
 
 
@@ -196,16 +199,18 @@ class StandardizeVolumeWithFilter:
     if multiple channels are given, standardization is done channel-wise.
     """
 
-    def __init__(self, value_to_filter: float):
+    def __init__(self, value_to_filter: float, epsilon: float = 1e-6):
         self.value_to_filter = value_to_filter
+        self.epsilon = epsilon
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
         means = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
         stds = torch.zeros(tensor.shape[0], 1, 1, 1).to(tensor.dtype)
         for channel_id in range(tensor.shape[0]):
-            means[channel_id, ...] = self._filter(tensor[channel_id]).mean()
-            stds[channel_id, ...] = self._filter(tensor[channel_id]).std()
-        transformed = (tensor - means) / stds
+            filtered = self._filter(tensor[channel_id])
+            means[channel_id, ...] = filtered.mean()
+            stds[channel_id, ...] = filtered.std()
+        transformed = (tensor - means) / (stds + self.epsilon)
         return transformed
 
     def _filter(self, tensor: torch.Tensor) -> torch.Tensor:

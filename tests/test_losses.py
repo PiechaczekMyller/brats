@@ -51,6 +51,15 @@ class TestNLLLossOneHot:
         assert np.isclose(losses.NLLLossOneHot()(images, target), result,
                           atol=1.e-4)
 
+    @pytest.mark.parametrize("images",
+                             [torch.tensor([[0., 0.9]]),
+                              torch.tensor([[0., 0.9], [0., 0.9]]),
+                              torch.tensor([[0., 0.9, 0], [0.9, 0., 0.],
+                                            [0., 0., 0.9]])])
+    def test_if_returns_nans_for_0_input(self, images):
+        labels = torch.zeros(images.shape)
+        assert not torch.any(torch.isnan(losses.NLLLossOneHot()(images, labels)))
+
 
 class TestComposedLoss:
     @pytest.mark.parametrize("images, target, result",
