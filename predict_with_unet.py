@@ -52,12 +52,17 @@ if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
 
+    center_crop_start = (240 - args.input_size) // 2
+    center_crop_stop = (240 - args.input_size) // 2 + args.input_size
+
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
                                             transformations.StandardizeVolumeWithFilter(0),
-                                            trfs.Lambda(lambda x: x.float())
+                                            trfs.Lambda(lambda x: x.float()),
+                                            trfs.Lambda(lambda x: x[:, :, center_crop_start:center_crop_stop,
+                                                                  center_crop_start:center_crop_stop])
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
@@ -65,10 +70,10 @@ if __name__ == '__main__':
                                           transformations.OneHotEncoding([0, 1, 2, 3]),
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
-                                          trfs.Lambda(lambda x: x.float())
+                                          trfs.Lambda(lambda x: x.float()),
+                                          trfs.Lambda(lambda x: x[:, :, center_crop_start:center_crop_stop,
+                                                                center_crop_start:center_crop_stop])
                                           ])
-    common_transformations = transformations.ComposeCommon(
-        [transformations.RandomCrop((args.input_size, args.input_size))])
 
     with open(args.division_json) as division_json:
         division = json.load(division_json)
@@ -85,11 +90,11 @@ if __name__ == '__main__':
 
     valid_volumes_set = datasets.NiftiFolder(valid_volumes_paths, volumes_transformations)
     valid_mask_set = datasets.NiftiFolder(valid_masks_paths, masks_transformations)
-    valid_set = datasets.CombinedDataset(valid_volumes_set, valid_mask_set, transform=common_transformations)
+    valid_set = datasets.CombinedDataset(valid_volumes_set, valid_mask_set)
 
     test_volumes_set = datasets.NiftiFolder(test_volumes_paths, volumes_transformations)
     test_mask_set = datasets.NiftiFolder(test_masks_paths, masks_transformations)
-    test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set, transform=common_transformations)
+    test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set)
 
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
