@@ -1,0 +1,11 @@
+{
+  "train": [
+    "BRATS_027.nii.gz"
+  ],
+  "valid": [
+    "BRATS_144.nii.gz"
+  ],
+  "test": [
+    "BRATS_044.nii.gz"
+  ]
+}

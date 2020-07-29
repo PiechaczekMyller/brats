@@ -2,6 +2,7 @@ import argparse
 import enum
 import json
 import os
+import pathlib
 import warnings
 
 import torch
@@ -38,7 +39,7 @@ if __name__ == '__main__':
         parser.add_argument('--division_json', type=str, required=True)
         parser.add_argument('--log_dir', type=str, required=True)
         parser.add_argument('--device', type=str, required=True)
-        parser.add_argument('--epochs', type=int, required=True)
+        parser.add_argument('--model_path', type=str, required=True)
         parser.add_argument('--batch_size', type=int)
         parser.add_argument('--patience', type=int, default=10)
         parser.add_argument('--learning_rate', type=float, default=0.001)
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
 
-    model = UNet3D(4, 4).float()
+    model = torch.load(args.model_path)
     model.to(args.device)
 
     criterion = DiceLoss()
@@ -107,3 +108,13 @@ if __name__ == '__main__':
     valid_outputs = run_inference(model, valid_loader, args.device)
     test_outputs = run_inference(model, valid_loader, args.device)
 
+    valid_outputs_path = os.path.join(args.log_dir, 'outputs', 'valid')
+    test_outputs_path = os.path.join(args.log_dir, 'outputs', 'test')
+
+    pathlib.Path(valid_outputs_path).mkdir(parents=True, exist_ok=True)
+    for output, input_path in zip(valid_outputs, valid_volumes_set._files):
+        torch.save(output, os.path.join(valid_outputs_path, os.path.basename(input_path)))
+
+    pathlib.Path(test_outputs_path).mkdir(parents=True, exist_ok=True)
+    for output, input_path in zip(test_outputs, test_volumes_set._files):
+        torch.save(output, os.path.join(test_outputs_path, os.path.basename(input_path)))
