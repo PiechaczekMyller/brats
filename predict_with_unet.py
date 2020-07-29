@@ -61,8 +61,7 @@ if __name__ == '__main__':
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
                                             transformations.StandardizeVolumeWithFilter(0),
                                             trfs.Lambda(lambda x: x.float()),
-                                            trfs.Lambda(lambda x: x[:, :, center_crop_start:center_crop_stop,
-                                                                  center_crop_start:center_crop_stop])
+                                            transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
@@ -71,8 +70,7 @@ if __name__ == '__main__':
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           trfs.Lambda(lambda x: x.float()),
-                                          trfs.Lambda(lambda x: x[:, :, center_crop_start:center_crop_stop,
-                                                                center_crop_start:center_crop_stop])
+                                          transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
                                           ])
 
     with open(args.division_json) as division_json:
