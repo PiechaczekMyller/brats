@@ -77,3 +77,29 @@ def run_validation_epoch(model: nn.Module, data_loader: data.DataLoader, criteri
                 out_metrics[metric_name].append(metric_values)
     out_metrics = {metric_name: np.array(out_metrics[metric_name]).mean(axis=0) for metric_name in metrics.keys()}
     return np.mean(losses), out_metrics
+
+
+def run_inference(
+        model: nn.Module,
+        data_loader: data.DataLoader,
+        device: str,
+):
+    """
+    Function performing one validation epoch.
+    Args:
+        :param device: Device where the data will be send.
+        :param model: Network on which epoch is performed.
+        :param data_loader: Loader providing data on which model is validated.
+        :param criterion: Function to calculate validation loss.
+        :param device: Device where the data will be send.
+    """
+    model.train(False)
+    model.eval()
+    outputs = []
+    with torch.no_grad():
+        for input in data_loader:
+            input = input[0].to(device)
+            output = model(input)
+            outputs.append(output)
+            break
+    return outputs
