@@ -100,5 +100,5 @@ def run_inference(
         for input in data_loader:
             input = input[0].to(device)
             output = model(input)
-            outputs.append(output)
+            outputs.append(output.detach().cpu())
     return outputs

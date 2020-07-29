@@ -111,7 +111,7 @@ if __name__ == '__main__':
     metrics = {"dice": dice}
 
     valid_outputs = run_inference(model, valid_loader, args.device)
-    test_outputs = run_inference(model, valid_loader, args.device)
+    test_outputs = run_inference(model, test_loader, args.device)
 
     valid_outputs_path = os.path.join(args.log_dir, 'outputs', 'valid')
     test_outputs_path = os.path.join(args.log_dir, 'outputs', 'test')

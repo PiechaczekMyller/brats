@@ -140,4 +140,3 @@ class HausdorffDistance95:
                     Dimensions - (Batch, Depth)
             """
         return F.hausdorff95(prediction, target, self.merge_operation)
-

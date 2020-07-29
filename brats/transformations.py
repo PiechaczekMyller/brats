@@ -96,13 +96,13 @@ C = 3
 
 @reorder.register(np.ndarray)
 def _(img: np.ndarray) -> np.ndarray:
-    transformed = np.moveaxis(img, [H, W, D, C], [2, 3, 1, 0])
+    transformed = np.moveaxis(img, [H, W, D, C], [3, 2, 1, 0])
     return transformed
 
 
 @reorder.register(torch.Tensor)
 def _(img: torch.Tensor) -> torch.Tensor:
-    transformed = img.permute(C, D, H, W)
+    transformed = img.permute(C, D, W, H)
     return transformed
 
 

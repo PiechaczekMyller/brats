@@ -136,17 +136,21 @@ def hausdorff95(prediction: torch.Tensor, target: torch.Tensor,
     assert utils.is_binary(target), "Target must be binary"
     prediction = prediction.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
-    volumes_count, _, slices_count, _, _ = prediction.shape
-    results = np.zeros((volumes_count, slices_count))
+    volumes_count, classes_count, slices_count, _, _ = prediction.shape
+    results = np.zeros((volumes_count, classes_count, slices_count))
     for volume_idx in range(volumes_count):
-        for slice_idx in range(slices_count):
-            prediction_slice = prediction[
-                volume_idx, FIRST_CLASS, slice_idx, ...]
-            target_slice = target[volume_idx, FIRST_CLASS, slice_idx, ...]
-            if utils.has_only_zeros(prediction_slice) or \
-                    utils.has_only_zeros(target_slice):
-                results[volume_idx, slice_idx] = 0
-            else:
-                results[volume_idx, slice_idx] = mp.hd95(prediction_slice,
-                                                         target_slice)
-    return merge_operation(torch.from_numpy(results))
+        for class_idx in range(classes_count):
+            for slice_idx in range(slices_count):
+                prediction_slice = prediction[
+                    volume_idx, class_idx, slice_idx, ...]
+                target_slice = target[volume_idx, class_idx, slice_idx, ...]
+                if utils.has_only_zeros(prediction_slice) or \
+                        utils.has_only_zeros(target_slice):
+                    results[volume_idx, class_idx, slice_idx] = 0
+                else:
+                    results[volume_idx, class_idx, slice_idx] = mp.hd95(prediction_slice,
+                                                                        target_slice)
+    results = torch.from_numpy(results)
+    score = torch.mean(results, dim=2)
+    score = torch.mean(score, dim=BATCH_DIM)
+    return score
