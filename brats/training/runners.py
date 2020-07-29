@@ -101,5 +101,4 @@ def run_inference(
             input = input[0].to(device)
             output = model(input)
             outputs.append(output)
-            break
     return outputs
