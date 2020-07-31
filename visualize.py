@@ -5,11 +5,13 @@ import os
 import pathlib
 import warnings
 
+import cv2
 from matplotlib import pyplot as plt
-from skimage.color import label2rgb
-from skimage import io
+
+from skimage import io, color
 import torch
 import numpy as np
+from skimage.color import label2rgb
 from torch.nn import functional as F
 from torchvision import transforms as trfs
 from brats import transformations
@@ -29,8 +31,60 @@ class Labels(enum.IntEnum):
     ENHANCING = 3
 
 
-errors_colors = ["green", "blue", "red"]
-classes_colors = ["blue", 'yellow', 'red']
+def add_red_label(image, label):
+    if image.ndim == 2:
+        image = color.gray2rgb(image)
+    mask = np.stack([label, np.zeros_like(label), np.zeros_like(label)], axis=2)
+    image = image.astype(np.float64)
+    mask = mask.astype(np.float64)
+    masked = cv2.addWeighted(image, 1., mask, 0.5, 0)
+    return masked
+
+
+def add_green_label(image, label):
+    if image.ndim == 2:
+        image = color.gray2rgb(image)
+    mask = np.stack([np.zeros_like(label), label, np.zeros_like(label)], axis=2)
+    image = image.astype(np.float64)
+    mask = mask.astype(np.float64)
+    masked = cv2.addWeighted(image, 1., mask, 0.5, 0)
+    return masked
+
+
+def add_yellow_label(image, label):
+    if image.ndim == 2:
+        image = color.gray2rgb(image)
+    mask = np.stack([label, label, np.zeros_like(label)], axis=2)
+    image = image.astype(np.float64)
+    mask = mask.astype(np.float64)
+    masked = cv2.addWeighted(image, 1., mask, 0.5, 0)
+    return masked
+
+
+def add_cyan_label(image, label):
+    if image.ndim == 2:
+        image = color.gray2rgb(image)
+    mask = np.stack([np.zeros_like(label), label, label], axis=2)
+    image = image.astype(np.float64)
+    mask = mask.astype(np.float64)
+    masked = cv2.addWeighted(image, 1., mask, 0.5, 0)
+    return masked
+
+
+errors_colors = {1: add_green_label, 2: add_yellow_label, 3: add_red_label}
+classes_colors = {1: add_cyan_label, 2: add_yellow_label, 3: add_red_label}
+
+
+def draw_labels(labels, image, colors):
+    image = convert_image_to_uint8(image).astype(np.float64)/255
+    masked = np.copy(image)
+    for class_id in np.unique(labels):
+        if class_id == 0:
+            continue
+        mask = np.zeros_like(image)
+        mask[labels == class_id] = 1
+        masked = colors[class_id](masked, mask)
+    return masked
 
 
 def create_error_vis_for_classes(image, prediction, mask):
@@ -49,12 +103,9 @@ def create_error_vis_for_classes(image, prediction, mask):
         error_labels[errors == -2] = 2  # False positives
         error_labels[errors == 1] = 3  # False negatives
 
-        class_error_image = label2rgb(error_labels,
-                                      image=image,
-                                      bg_label=0,
-                                      image_alpha=0.06,
-                                      alpha=0.98,
-                                      colors=errors_colors)
+        class_error_image = draw_labels(error_labels,
+                                        image,
+                                        colors=errors_colors)
         images[tumor_class] = class_error_image
     return images
 
@@ -72,13 +123,9 @@ def create_wt_image(image, prediction, mask):
     error_labels[errors == -2] = 2  # False positives
     error_labels[errors == 1] = 3  # False negatives
 
-    class_error_image = label2rgb(error_labels,
-                                  image=image,
-                                  bg_label=0,
-                                  image_alpha=0.06,
-                                  alpha=0.98,
-                                  colors=errors_colors)
-
+    class_error_image = draw_labels(error_labels,
+                                    image,
+                                    colors=errors_colors)
     return class_error_image
 
 
@@ -122,7 +169,8 @@ if __name__ == '__main__':
                                             trfs.Lambda(
                                                 lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
                                             trfs.Lambda(lambda x: x.float()),
-                                            transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                            transformations.ResizeVolumeTransformation(
+                                                (args.input_size, args.input_size))
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
@@ -130,7 +178,7 @@ if __name__ == '__main__':
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           trfs.Lambda(lambda x: x.float()),
-                                          transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                          transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
 
     with open(args.division_json) as division_json:
@@ -171,18 +219,68 @@ if __name__ == '__main__':
 
         output_dir = os.path.join(args.log_dir, "visualization", 'valid')
         for slice_idx in range(max_indeces.shape[0]):
-            prediction_rgb = label2rgb(max_indeces[slice_idx],
-                                       image=volume[slice_idx, ...],
-                                       bg_label=0,
-                                       image_alpha=0.06,
-                                       alpha=0.98,
-                                       colors=classes_colors)
-            mask_rgb = label2rgb(mask[slice_idx, ...],
-                                 image=volume[slice_idx, ...],
-                                 bg_label=0,
-                                 image_alpha=0.06,
-                                 alpha=0.98,
-                                 colors=classes_colors)
+            prediction_rgb = draw_labels(max_indeces[slice_idx],
+                                         image=volume[slice_idx, ...],
+                                         colors=classes_colors)
+            mask_rgb = draw_labels(mask[slice_idx, ...],
+                                   image=volume[slice_idx, ...],
+                                   colors=classes_colors)
+            class_images = create_error_vis_for_classes(volume[slice_idx, ...],
+                                                        max_indeces[slice_idx, ...],
+                                                        mask[slice_idx, ...])
+            whole_tumor_image = create_wt_image(volume[slice_idx, ...],
+                                                max_indeces[slice_idx, ...],
+                                                mask[slice_idx, ...])
+
+            prediction_rgb = convert_image_to_uint8(prediction_rgb)
+            mask_rgb = convert_image_to_uint8(mask_rgb)
+            wt_rgb = convert_image_to_uint8(whole_tumor_image)
+            class_images = {key: convert_image_to_uint8(image) for key, image in class_images.items()}
+
+            slice_filename = '{}.png'.format(slice_idx)
+            prediction_path = os.path.join(output_dir, os.path.basename(patient_path), 'prediction',
+                                           slice_filename)
+            mask_path = os.path.join(output_dir, os.path.basename(patient_path), 'mask', slice_filename)
+            background_path = os.path.join(output_dir, os.path.basename(patient_path), 'background', slice_filename)
+            edema_path = os.path.join(output_dir, os.path.basename(patient_path), 'edema', slice_filename)
+            non_enh_path = os.path.join(output_dir, os.path.basename(patient_path), 'non_enhancing', slice_filename)
+            enh_path = os.path.join(output_dir, os.path.basename(patient_path), 'enhancing', slice_filename)
+            wt_path = os.path.join(output_dir, os.path.basename(patient_path), 'whole_tumor', slice_filename)
+
+            pathlib.Path(os.path.dirname(prediction_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(mask_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(background_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(edema_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(non_enh_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(enh_path)).mkdir(parents=True, exist_ok=True)
+            pathlib.Path(os.path.dirname(wt_path)).mkdir(parents=True, exist_ok=True)
+
+            io.imsave(prediction_path, prediction_rgb)
+            io.imsave(mask_path, mask_rgb)
+            io.imsave(background_path, class_images[Labels.BACKGROUND])
+            io.imsave(edema_path, class_images[Labels.EDEMA])
+            io.imsave(non_enh_path, class_images[Labels.NON_ENHANCING])
+            io.imsave(enh_path, class_images[Labels.ENHANCING])
+            io.imsave(wt_path, wt_rgb)
+
+    for volume, mask, patient_path in zip(test_volumes_set, test_mask_set, test_volumes_set._files):
+        prediction_path = os.path.join(test_outputs_path, os.path.basename(patient_path))
+        prediction = torch.load(prediction_path)
+
+        _, max_indeces = prediction.max(1)
+
+        volume = volume[3, ...].cpu().numpy()
+        max_indeces = max_indeces[0, ...].cpu().numpy()
+        mask = mask[0, ...].cpu().numpy()
+
+        output_dir = os.path.join(args.log_dir, "visualization", 'test')
+        for slice_idx in range(max_indeces.shape[0]):
+            prediction_rgb = draw_labels(max_indeces[slice_idx],
+                                         image=volume[slice_idx, ...],
+                                         colors=classes_colors)
+            mask_rgb = draw_labels(mask[slice_idx, ...],
+                                   image=volume[slice_idx, ...],
+                                   colors=classes_colors)
             class_images = create_error_vis_for_classes(volume[slice_idx, ...],
                                                         max_indeces[slice_idx, ...],
                                                         mask[slice_idx, ...])

@@ -57,7 +57,7 @@ if __name__ == '__main__':
                                           trfs.Lambda(
                                               lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
                                           trfs.Lambda(lambda x: x.float()),
-                                          transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                          transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
 
     with open(args.division_json) as division_json:
@@ -103,30 +103,43 @@ if __name__ == '__main__':
         fscore_scores = fscore(one_hot_prediction, mask)
         hausdorff_scores = hausdorff(one_hot_prediction, mask)
 
+        wt_prediction = one_hot_prediction.clone().sum(dim=0)
+        wt_prediction[wt_prediction > 0] = 1.
+        wt_prediction = wt_prediction.unsqueeze(0)
+
+        wt_mask = mask.clone().sum(dim=0)
+        wt_mask[wt_mask > 0] = 1.
+        wt_mask = wt_mask.unsqueeze(0)
+
         patient_metrics['dice_background'] = dice_scores[Labels.BACKGROUND].item()
         patient_metrics['dice_edema'] = dice_scores[Labels.EDEMA].item()
         patient_metrics['dice_enhancing'] = dice_scores[Labels.ENHANCING].item()
         patient_metrics['dice_non_enhancing'] = dice_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['dice_whole_tumor'] = dice(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['recall_background'] = recall_scores[Labels.BACKGROUND].item()
         patient_metrics['recall_edema'] = recall_scores[Labels.EDEMA].item()
         patient_metrics['recall_enhancing'] = recall_scores[Labels.ENHANCING].item()
         patient_metrics['recall_non_enhancing'] = recall_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['recall_whole_tumor'] = recall(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['precision_background'] = precision_scores[Labels.BACKGROUND].item()
         patient_metrics['precision_edema'] = precision_scores[Labels.EDEMA].item()
         patient_metrics['precision_enhancing'] = precision_scores[Labels.ENHANCING].item()
         patient_metrics['precision_non_enhancing'] = precision_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['precision_whole_tumor'] = precision(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['fscore_background'] = fscore_scores[Labels.BACKGROUND].item()
         patient_metrics['fscore_edema'] = fscore_scores[Labels.EDEMA].item()
         patient_metrics['fscore_enhancing'] = fscore_scores[Labels.ENHANCING].item()
         patient_metrics['fscore_non_enhancing'] = fscore_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['fscore_whole_tumor'] = fscore(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['hausdorff_background'] = hausdorff_scores[Labels.BACKGROUND].item()
         patient_metrics['hausdorff_edema'] = hausdorff_scores[Labels.EDEMA].item()
         patient_metrics['hausdorff_enhancing'] = hausdorff_scores[Labels.ENHANCING].item()
         patient_metrics['hausdorff_non_enhancing'] = hausdorff_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['hausdorff_whole_tumor'] = hausdorff(wt_prediction, wt_mask)[0].item()
 
         valid_metrics.append(patient_metrics)
     valid_df = pd.DataFrame(valid_metrics)
@@ -149,30 +162,43 @@ if __name__ == '__main__':
         fscore_scores = fscore(one_hot_prediction, mask)
         hausdorff_scores = hausdorff(one_hot_prediction, mask)
 
+        wt_prediction = one_hot_prediction.clone().sum(dim=0)
+        wt_prediction[wt_prediction > 0] = 1.
+        wt_prediction = wt_prediction.unsqueeze(0)
+
+        wt_mask = mask.clone().sum(dim=0)
+        wt_mask[wt_mask > 0] = 1.
+        wt_mask = wt_mask.unsqueeze(0)
+
         patient_metrics['dice_background'] = dice_scores[Labels.BACKGROUND].item()
         patient_metrics['dice_edema'] = dice_scores[Labels.EDEMA].item()
         patient_metrics['dice_enhancing'] = dice_scores[Labels.ENHANCING].item()
         patient_metrics['dice_non_enhancing'] = dice_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['dice_whole_tumor'] = dice(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['recall_background'] = recall_scores[Labels.BACKGROUND].item()
         patient_metrics['recall_edema'] = recall_scores[Labels.EDEMA].item()
         patient_metrics['recall_enhancing'] = recall_scores[Labels.ENHANCING].item()
         patient_metrics['recall_non_enhancing'] = recall_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['recall_whole_tumor'] = recall(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['precision_background'] = precision_scores[Labels.BACKGROUND].item()
         patient_metrics['precision_edema'] = precision_scores[Labels.EDEMA].item()
         patient_metrics['precision_enhancing'] = precision_scores[Labels.ENHANCING].item()
         patient_metrics['precision_non_enhancing'] = precision_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['precision_whole_tumor'] = precision(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['fscore_background'] = fscore_scores[Labels.BACKGROUND].item()
         patient_metrics['fscore_edema'] = fscore_scores[Labels.EDEMA].item()
         patient_metrics['fscore_enhancing'] = fscore_scores[Labels.ENHANCING].item()
         patient_metrics['fscore_non_enhancing'] = fscore_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['fscore_whole_tumor'] = fscore(wt_prediction, wt_mask)[0].item()
 
         patient_metrics['hausdorff_background'] = hausdorff_scores[Labels.BACKGROUND].item()
         patient_metrics['hausdorff_edema'] = hausdorff_scores[Labels.EDEMA].item()
         patient_metrics['hausdorff_enhancing'] = hausdorff_scores[Labels.ENHANCING].item()
         patient_metrics['hausdorff_non_enhancing'] = hausdorff_scores[Labels.NON_ENHANCING].item()
+        patient_metrics['hausdorff_whole_tumor'] = hausdorff(wt_prediction, wt_mask)[0].item()
 
         test_metrics.append(patient_metrics)
     test_df = pd.DataFrame(test_metrics)
