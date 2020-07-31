@@ -10,14 +10,16 @@ class UNet3DBlock(nn.Module):
                                kernel_size=3,
                                padding=1,
                                bias=False)
-        self.bn1 = nn.InstanceNorm3d(out_channels)
+        self.bn1 = nn.GroupNorm(num_groups=mid_channels // 16,
+                                num_channels=mid_channels)
         self.act1 = nn.LeakyReLU()
         self.conv2 = nn.Conv3d(in_channels=mid_channels,
                                out_channels=out_channels,
                                kernel_size=3,
                                padding=1,
                                bias=False)
-        self.bn2 = nn.InstanceNorm3d(out_channels)
+        self.bn2 = nn.GroupNorm(num_groups=out_channels // 16,
+                                num_channels=out_channels)
         self.act2 = nn.LeakyReLU()
 
     def forward(self, input):
