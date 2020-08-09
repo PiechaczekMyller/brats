@@ -6,15 +6,10 @@ import torch
 from torch import nn
 from torch.optim.optimizer import Optimizer
 from torch.utils import data
-
-try:
-    from apex import amp
-except ImportError:
-    warnings.warn("Apex ModuleNotFoundError, mocked version used")
-    import brats.training.fake_amp as amp
+from torch.cuda.amp import autocast
 
 
-def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer: Optimizer,
+def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer: Optimizer, scaler,
                        criterion: typing.Callable,
                        metrics: typing.Dict[str, typing.Callable], device: str, use_amp: bool = False):
     """
@@ -34,14 +29,13 @@ def run_training_epoch(model: nn.Module, data_loader: data.DataLoader, optimizer
         input = input.to(device)
         target = target.to(device)
         optimizer.zero_grad()
-        output = model(input)
-        loss = criterion(output, target)
-        if use_amp:
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            loss.backward()
-        optimizer.step()
+        with autocast():
+            output = model(input)
+            loss = criterion(output, target)
+
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         losses.append(loss.item())
         for metric_name in metrics:
             metric_values = [value.item() for value in metrics[metric_name](output, target)]
@@ -69,8 +63,9 @@ def run_validation_epoch(model: nn.Module, data_loader: data.DataLoader, criteri
         for input, target in data_loader:
             input = input.to(device)
             target = target.to(device)
-            output = model(input)
-            loss = criterion(output, target)
+            with autocast():
+                output = model(input)
+                loss = criterion(output, target)
             losses.append(loss.item())
             for metric_name in metrics:
                 metric_values = [value.item() for value in metrics[metric_name](output, target)]

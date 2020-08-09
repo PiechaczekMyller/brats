@@ -103,12 +103,13 @@ if __name__ == '__main__':
         fscore_scores = fscore(one_hot_prediction, mask)
         hausdorff_scores = hausdorff(one_hot_prediction, mask)
 
-        wt_prediction = one_hot_prediction.clone().sum(dim=0)
-        wt_prediction[wt_prediction > 0] = 1.
+        wt_prediction = torch.ones_like(prediction) - prediction[:,0,...]
+        wt_prediction = wt_prediction[:,0,...]
         wt_prediction = wt_prediction.unsqueeze(0)
 
-        wt_mask = mask.clone().sum(dim=0)
-        wt_mask[wt_mask > 0] = 1.
+
+        wt_mask = torch.ones_like(mask) - mask[:, 0, ...]
+        wt_mask = wt_mask[:, 0, ...]
         wt_mask = wt_mask.unsqueeze(0)
 
         patient_metrics['dice_background'] = dice_scores[Labels.BACKGROUND].item()

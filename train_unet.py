@@ -4,7 +4,7 @@ import json
 import os
 import warnings
 from time import time
-
+import dill
 import mlflow
 import torch
 import numpy as np
@@ -12,6 +12,8 @@ from torch import optim
 from torch.nn import functional as F
 from torch.utils.data import Subset
 from torchvision import transforms as trfs
+
+from torch.cuda.amp import GradScaler
 from brats import transformations
 from brats.data.datasets import read_dataset_json
 from brats.losses import DiceLoss, ComposedLoss, NLLLossOneHot
@@ -23,18 +25,35 @@ from brats.training.stop_conditions import EarlyStopping
 from brats.training.loggers import TensorboardLogger, BestModelLogger, BestStateDictLogger, ModelLogger, \
     StateDictsLogger, log_parameters, log_git_info
 
-try:
-    from apex import amp
-except ImportError:
-    warnings.warn("Apex ModuleNotFoundError, faked version used")
-    from brats.training import fake_amp as amp
-
 
 class Labels(enum.IntEnum):
     BACKGROUND = 0
     EDEMA = 1
     NON_ENHANCING = 2
     ENHANCING = 3
+
+
+class FromNumpy:
+    def __call__(self, x):
+        return torch.from_numpy(x)
+
+
+class ExpandDims:
+    def __init__(self, dim):
+        self.dim = dim
+
+    def __call__(self, x):
+        return np.expand_dims(x, self.dim)
+
+
+class PadTo160:
+    def __call__(self, x):
+        return F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x
+
+
+class ToFloat:
+    def __call__(self, x):
+        return x.float()
 
 
 if __name__ == '__main__':
@@ -60,7 +79,7 @@ if __name__ == '__main__':
 
     mlflow.set_tracking_uri('http://KP-LABS53.kplabs.pl:5566')
     mlflow.set_experiment("UNet3D")
-    mlflow.start_run(run_name="Baseline, stratified set")
+    mlflow.start_run(run_name="Amp with batch size 2")
 
     mlflow.log_param('log dir', args.log_dir)
     mlflow.log_param('epochs', args.epochs)
@@ -71,20 +90,42 @@ if __name__ == '__main__':
     mlflow.log_param('dataset_path', args.dataset_path)
     mlflow.log_param('division_json', args.division_json)
 
+
+    class FromNumpy:
+        def __call__(self, x):
+            return torch.from_numpy(x)
+
+
+    class ExpandDims:
+        def __init__(self, dim):
+            self.dim = dim
+
+        def __call__(self, x):
+            return np.expand_dims(x, self.dim)
+
+
+    class PadTo160:
+        def __call__(self, x):
+            return F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x
+
+
+    class ToFloat:
+        def __call__(self, x):
+            return x.float()
+
+
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
-                                            trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                            trfs.Lambda(
-                                                lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                            FromNumpy(),
+                                            PadTo160(),
                                             transformations.StandardizeVolumeWithFilter(0),
-                                            trfs.Lambda(lambda x: x.float())
+                                            ToFloat()
                                             ])
-    masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
+    masks_transformations = trfs.Compose([ExpandDims(3),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
-                                          trfs.Lambda(lambda x: torch.from_numpy(x)),
+                                          FromNumpy(),
                                           transformations.OneHotEncoding([0, 1, 2, 3]),
-                                          trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
-                                          trfs.Lambda(lambda x: x.float())
+                                          PadTo160(),
+                                          ToFloat()
                                           ])
     common_transformations = transformations.ComposeCommon(
         [transformations.RandomCrop((args.input_size, args.input_size))])
@@ -117,19 +158,18 @@ if __name__ == '__main__':
     test_mask_set = datasets.NiftiFolder(test_masks_paths, masks_transformations)
     test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set, transform=common_transformations)
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=8)
+    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
     model = UNet3D(4, 4).float()
     model.to(args.device)
 
-    criterion = DiceLoss()
-    optimizer = optim.Adam(model.parameters(), args.learning_rate)
-    if args.use_amp:
-        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
+    criterion = DiceLoss(epsilon=1e-4)
+    optimizer = optim.Adam(model.parameters(), args.learning_rate, eps=1e-4)
+    scaler = GradScaler()
 
-    dice = DiceScore()
+    dice = DiceScore(epsilon=1e-4)
     metrics = {"dice": dice}
 
     last_model_logger = ModelLogger(os.path.join(args.log_dir, "models"))
@@ -144,7 +184,8 @@ if __name__ == '__main__':
     log_git_info(args.log_dir)
     for epoch in range(args.epochs):
         time_0 = time()
-        train_loss, train_metrics = run_training_epoch(model, train_loader, optimizer, criterion, metrics, args.device)
+        train_loss, train_metrics = run_training_epoch(model, train_loader, optimizer, scaler, criterion, metrics,
+                                                       args.device)
         valid_loss, valid_metrics = run_validation_epoch(model, valid_loader, criterion, metrics, args.device)
         print(f"Epoch: {epoch} "
               f"Train loss: {train_loss:.4f} "
@@ -155,7 +196,7 @@ if __name__ == '__main__':
               f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
               f"Time per epoch: {time() - time_0:.4f}s", flush=True)
 
-        mlflow.log_metric("train_loss",train_loss)
+        mlflow.log_metric("train_loss", train_loss)
 
         last_model_logger.log(model, "last_epoch")
         last_state_dict_logger.log(model, 0)
