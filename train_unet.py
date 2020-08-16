@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     mlflow.set_tracking_uri('http://KP-LABS53.kplabs.pl:5566')
     mlflow.set_experiment("UNet3D")
-    mlflow.start_run(run_name="Amp with AdamW")
+    mlflow.start_run(run_name="Amp with groupNorm, 16 groups per channel")
 
     mlflow.log_param('log dir', args.log_dir)
     mlflow.log_param('epochs', args.epochs)
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     model.to(args.device)
 
     criterion = DiceLoss(epsilon=1e-4)
-    optimizer = optim.AdamW(model.parameters(), args.learning_rate, eps=1e-4)
+    optimizer = optim.Adam(model.parameters(), args.learning_rate, eps=1e-4)
     scaler = GradScaler()
 
     dice = DiceScore(epsilon=1e-4)
