@@ -23,6 +23,7 @@ def dice(prediction: torch.Tensor,
     Returns:
         torch.Tensor: DICE score for each class averaged across the whole batch.
     """
+
     volume_dims = list(range(2, target.dim()))
     intersection = utils.calculate_intersection(prediction, target,
                                                 dim=volume_dims)

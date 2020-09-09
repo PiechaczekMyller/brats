@@ -48,7 +48,10 @@ class ExpandDims:
 
 class PadTo160:
     def __call__(self, x):
-        return F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x
+        pad = 32 - x.shape[1]
+        x= F.pad(x, [0, 0, 0, 0, pad, 0]) if 64 - x.shape[1] != 0 else x
+        x[0,:pad,:,:]=1
+        return x
 
 
 class ToFloat:
@@ -79,7 +82,7 @@ if __name__ == '__main__':
 
     mlflow.set_tracking_uri('http://KP-LABS53.kplabs.pl:5566')
     mlflow.set_experiment("UNet3D")
-    mlflow.start_run(run_name="Amp with groupNorm, 16 groups per channel")
+    mlflow.start_run(run_name="Prostate")
 
     mlflow.log_param('log dir', args.log_dir)
     mlflow.log_param('epochs', args.epochs)
@@ -106,7 +109,10 @@ if __name__ == '__main__':
 
     class PadTo160:
         def __call__(self, x):
-            return F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x
+            pad = 32 - x.shape[1]
+            x = F.pad(x, [0, 0, 0, 0, pad, 0]) if 64 - x.shape[1] != 0 else x
+            x[0, :pad, :, :] = 1
+            return x
 
 
     class ToFloat:
@@ -123,7 +129,7 @@ if __name__ == '__main__':
     masks_transformations = trfs.Compose([ExpandDims(3),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           FromNumpy(),
-                                          transformations.OneHotEncoding([0, 1, 2, 3]),
+                                          transformations.OneHotEncoding([0, 1, 2]),
                                           PadTo160(),
                                           ToFloat()
                                           ])
@@ -162,7 +168,7 @@ if __name__ == '__main__':
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
-    model = UNet3D(4, 4).float()
+    model = UNet3D(2, 3).float()
     model.to(args.device)
 
     criterion = DiceLoss(epsilon=1e-4)
@@ -191,9 +197,8 @@ if __name__ == '__main__':
               f"Train loss: {train_loss:.4f} "
               f"Valid loss: {valid_loss:.4f} "
               f"Valid dice background: {valid_metrics['dice'][Labels.BACKGROUND]:.4f} "
-              f"Valid dice edema: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
-              f"Valid dice non enhancing: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
-              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
+              f"Valid dice 1: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
+              f"Valid dice 2: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
               f"Time per epoch: {time() - time_0:.4f}s", flush=True)
 
         mlflow.log_metric("train_loss", train_loss)
@@ -206,21 +211,18 @@ if __name__ == '__main__':
         mean_dice = np.mean(
             [valid_metrics['dice'][Labels.BACKGROUND],
              valid_metrics['dice'][Labels.EDEMA],
-             valid_metrics['dice'][Labels.NON_ENHANCING],
-             valid_metrics['dice'][Labels.ENHANCING]])
+             valid_metrics['dice'][Labels.NON_ENHANCING]])
 
         mean_dice_no_background = np.mean([
             valid_metrics['dice'][Labels.EDEMA],
-            valid_metrics['dice'][Labels.NON_ENHANCING],
-            valid_metrics['dice'][Labels.ENHANCING]])
+            valid_metrics['dice'][Labels.NON_ENHANCING]])
 
         mlflow.log_metric("train_loss", train_loss, epoch)
         mlflow.log_metric("valid_loss", valid_loss, epoch)
         mlflow.log_metric("mean_dice", mean_dice, epoch)
         mlflow.log_metric("dice_background", valid_metrics['dice'][Labels.BACKGROUND], epoch)
-        mlflow.log_metric("dice_edema", valid_metrics['dice'][Labels.EDEMA], epoch)
-        mlflow.log_metric("dice_non_enhancing", valid_metrics['dice'][Labels.NON_ENHANCING], epoch)
-        mlflow.log_metric("dice_enhancing", valid_metrics['dice'][Labels.ENHANCING], epoch)
+        mlflow.log_metric("dice_1", valid_metrics['dice'][Labels.EDEMA], epoch)
+        mlflow.log_metric("dice_2", valid_metrics['dice'][Labels.NON_ENHANCING], epoch)
         mlflow.log_metric("time_per_epoch", time() - time_0, epoch)
 
         if early_stopping.check_stop_condition(valid_loss):
@@ -230,4 +232,3 @@ if __name__ == '__main__':
     mlflow.log_metric("test_dice_background", test_metrics['dice'][Labels.BACKGROUND])
     mlflow.log_metric("test_dice_edema", test_metrics['dice'][Labels.EDEMA])
     mlflow.log_metric("test_dice_non_enhancing", test_metrics['dice'][Labels.NON_ENHANCING])
-    mlflow.log_metric("test_dice_enhancing", test_metrics['dice'][Labels.ENHANCING])

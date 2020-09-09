@@ -158,7 +158,12 @@ if __name__ == '__main__':
         parser.set_defaults(use_amp=False)
         return parser
 
-
+    class PadTo160:
+        def __call__(self, x):
+            pad = 32 - x.shape[1]
+            x = F.pad(x, [0, 0, 0, 0, pad, 0]) if 64 - x.shape[1] != 0 else x
+            x[0, :pad, :, :] = 1
+            return x
     parser = create_parser()
     args = parser.parse_args()
 
@@ -166,8 +171,7 @@ if __name__ == '__main__':
     center_crop_stop = (240 - args.input_size) // 2 + args.input_size
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                            trfs.Lambda(
-                                                lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                            PadTo160(),
                                             trfs.Lambda(lambda x: x.float()),
                                             transformations.ResizeVolumeTransformation(
                                                 (args.input_size, args.input_size))
@@ -175,8 +179,7 @@ if __name__ == '__main__':
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                          trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
+                                          PadTo160(),
                                           trfs.Lambda(lambda x: x.float()),
                                           transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
@@ -213,7 +216,7 @@ if __name__ == '__main__':
 
         _, max_indeces = prediction.max(1)
 
-        volume = volume[3, ...].cpu().numpy()
+        volume = volume[0, ...].cpu().numpy()
         max_indeces = max_indeces[0, ...].cpu().numpy()
         mask = mask[0, ...].cpu().numpy()
 
@@ -269,7 +272,7 @@ if __name__ == '__main__':
 
         _, max_indeces = prediction.max(1)
 
-        volume = volume[3, ...].cpu().numpy()
+        volume = volume[0, ...].cpu().numpy()
         max_indeces = max_indeces[0, ...].cpu().numpy()
         mask = mask[0, ...].cpu().numpy()
 

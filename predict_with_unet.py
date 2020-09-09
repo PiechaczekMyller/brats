@@ -55,10 +55,16 @@ if __name__ == '__main__':
     center_crop_start = (240 - args.input_size) // 2
     center_crop_stop = (240 - args.input_size) // 2 + args.input_size
 
+    class PadTo160:
+        def __call__(self, x):
+            pad = 32 - x.shape[1]
+            x = F.pad(x, [0, 0, 0, 0, pad, 0]) if 64 - x.shape[1] != 0 else x
+            x[0, :pad, :, :] = 1
+            return x
+
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                            trfs.Lambda(
-                                                lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                            PadTo160(),
                                             transformations.StandardizeVolumeWithFilter(0),
                                             trfs.Lambda(lambda x: x.float()),
                                             transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
@@ -67,10 +73,9 @@ if __name__ == '__main__':
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
                                           transformations.OneHotEncoding([0, 1, 2, 3]),
-                                          trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
+                                          PadTo160(),
                                           trfs.Lambda(lambda x: x.float()),
-                                          transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                          transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
 
     with open(args.division_json) as division_json:
