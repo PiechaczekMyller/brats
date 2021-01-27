@@ -31,6 +31,12 @@ class Labels(enum.IntEnum):
     ENHANCING = 3
 
 
+class PadTo160:
+    def __call__(self, x):
+        a = F.pad(x, [0, 0, 0, 0, 16 - (x.shape[1] % 16), 0]) if x.shape[1] % 16 != 0 else x
+        return a
+
+
 def add_red_label(image, label):
     if image.ndim == 2:
         image = color.gray2rgb(image)
@@ -76,7 +82,7 @@ classes_colors = {1: add_cyan_label, 2: add_yellow_label, 3: add_red_label}
 
 
 def draw_labels(labels, image, colors):
-    image = convert_image_to_uint8(image).astype(np.float64)/255
+    image = convert_image_to_uint8(image).astype(np.float64) / 255
     masked = np.copy(image)
     for class_id in np.unique(labels):
         if class_id == 0:
@@ -166,8 +172,7 @@ if __name__ == '__main__':
     center_crop_stop = (240 - args.input_size) // 2 + args.input_size
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                            trfs.Lambda(
-                                                lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                            PadTo160(),
                                             trfs.Lambda(lambda x: x.float()),
                                             transformations.ResizeVolumeTransformation(
                                                 (args.input_size, args.input_size))
@@ -175,8 +180,7 @@ if __name__ == '__main__':
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                          trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
+                                          PadTo160(),
                                           trfs.Lambda(lambda x: x.float()),
                                           transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
@@ -202,7 +206,7 @@ if __name__ == '__main__':
     test_volumes_loader = torch.utils.data.DataLoader(test_volumes_set, batch_size=args.batch_size, shuffle=False)
     test_mask_loader = torch.utils.data.DataLoader(test_mask_set, batch_size=args.batch_size, shuffle=False)
 
-    one_hot_encoder = transformations.OneHotEncoding([0, 1, 2, 3])
+    one_hot_encoder = transformations.OneHotEncoding([0, 1, 2])
 
     valid_outputs_path = os.path.join(args.log_dir, 'outputs', 'valid')
     test_outputs_path = os.path.join(args.log_dir, 'outputs', 'test')
@@ -213,7 +217,7 @@ if __name__ == '__main__':
 
         _, max_indeces = prediction.max(1)
 
-        volume = volume[3, ...].cpu().numpy()
+        volume = volume[0, ...].cpu().numpy()
         max_indeces = max_indeces[0, ...].cpu().numpy()
         mask = mask[0, ...].cpu().numpy()
 
@@ -260,7 +264,7 @@ if __name__ == '__main__':
             io.imsave(background_path, class_images[Labels.BACKGROUND])
             io.imsave(edema_path, class_images[Labels.EDEMA])
             io.imsave(non_enh_path, class_images[Labels.NON_ENHANCING])
-            io.imsave(enh_path, class_images[Labels.ENHANCING])
+            # io.imsave(enh_path, class_images[Labels.ENHANCING])
             io.imsave(wt_path, wt_rgb)
 
     for volume, mask, patient_path in zip(test_volumes_set, test_mask_set, test_volumes_set._files):
@@ -269,7 +273,7 @@ if __name__ == '__main__':
 
         _, max_indeces = prediction.max(1)
 
-        volume = volume[3, ...].cpu().numpy()
+        volume = volume[0, ...].cpu().numpy()
         max_indeces = max_indeces[0, ...].cpu().numpy()
         mask = mask[0, ...].cpu().numpy()
 
@@ -316,5 +320,5 @@ if __name__ == '__main__':
             io.imsave(background_path, class_images[Labels.BACKGROUND])
             io.imsave(edema_path, class_images[Labels.EDEMA])
             io.imsave(non_enh_path, class_images[Labels.NON_ENHANCING])
-            io.imsave(enh_path, class_images[Labels.ENHANCING])
+            # io.imsave(enh_path, class_images[Labels.ENHANCING])
             io.imsave(wt_path, wt_rgb)

@@ -77,9 +77,9 @@ if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
 
-    mlflow.set_tracking_uri('http://KP-LABS53.kplabs.pl:5566')
+    mlflow.set_tracking_uri('http://kp-desktops2.kplabs.pl:5069')
     mlflow.set_experiment("UNet3D")
-    mlflow.start_run(run_name="Amp with groupNorm, 16 groups per channel")
+    mlflow.start_run(run_name="Pancreas and cancer segmentation")
 
     mlflow.log_param('log dir', args.log_dir)
     mlflow.log_param('epochs', args.epochs)
@@ -106,7 +106,8 @@ if __name__ == '__main__':
 
     class PadTo160:
         def __call__(self, x):
-            return F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x
+            a= F.pad(x, [0, 0, 0, 0, 16-(x.shape[1] % 16), 0]) if x.shape[1] % 16 != 0 else x
+            return a
 
 
     class ToFloat:
@@ -118,17 +119,19 @@ if __name__ == '__main__':
                                             FromNumpy(),
                                             PadTo160(),
                                             transformations.StandardizeVolumeWithFilter(0),
-                                            ToFloat()
+                                            ToFloat(),
+                                            transformations.ResizeVolumeTransformation(args.input_size)
                                             ])
     masks_transformations = trfs.Compose([ExpandDims(3),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           FromNumpy(),
-                                          transformations.OneHotEncoding([0, 1, 2, 3]),
+                                          transformations.OneHotEncoding([0, 1, 2]),
                                           PadTo160(),
-                                          ToFloat()
+                                          ToFloat(),
+                                          transformations.ResizeVolumeTransformation(args.input_size)
                                           ])
-    common_transformations = transformations.ComposeCommon(
-        [transformations.RandomCrop((args.input_size, args.input_size))])
+    # common_transformations = transformations.ComposeCommon(
+    #     [])
 
     with open(args.division_json) as division_json:
         division = json.load(division_json)
@@ -148,21 +151,24 @@ if __name__ == '__main__':
 
     train_volumes_set = datasets.NiftiFolder(train_volumes_paths, volumes_transformations)
     train_mask_set = datasets.NiftiFolder(train_masks_paths, masks_transformations)
-    train_set = datasets.CombinedDataset(train_volumes_set, train_mask_set, transform=common_transformations)
+    # train_set = datasets.CombinedDataset(train_volumes_set, train_mask_set, transform=common_transformations)
+    train_set = datasets.CombinedDataset(train_volumes_set, train_mask_set)
 
     valid_volumes_set = datasets.NiftiFolder(valid_volumes_paths, volumes_transformations)
     valid_mask_set = datasets.NiftiFolder(valid_masks_paths, masks_transformations)
-    valid_set = datasets.CombinedDataset(valid_volumes_set, valid_mask_set, transform=common_transformations)
+    # valid_set = datasets.CombinedDataset(valid_volumes_set, valid_mask_set, transform=common_transformations)
+    valid_set = datasets.CombinedDataset(valid_volumes_set, valid_mask_set)
 
     test_volumes_set = datasets.NiftiFolder(test_volumes_paths, volumes_transformations)
     test_mask_set = datasets.NiftiFolder(test_masks_paths, masks_transformations)
-    test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set, transform=common_transformations)
+    # test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set, transform=common_transformations)
+    test_set = datasets.CombinedDataset(test_volumes_set, test_mask_set)
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=8)
-    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=8)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=args.batch_size, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False)
 
-    model = UNet3D(4, 4).float()
+    model = UNet3D(1, 3).float()
     model.to(args.device)
 
     criterion = DiceLoss(epsilon=1e-4)
@@ -191,9 +197,9 @@ if __name__ == '__main__':
               f"Train loss: {train_loss:.4f} "
               f"Valid loss: {valid_loss:.4f} "
               f"Valid dice background: {valid_metrics['dice'][Labels.BACKGROUND]:.4f} "
-              f"Valid dice edema: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
-              f"Valid dice non enhancing: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
-              f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
+              f"Valid dice pancreas: {valid_metrics['dice'][Labels.EDEMA]:.4f} "
+              f"Valid dice cancer: {valid_metrics['dice'][Labels.NON_ENHANCING]:.4f} "
+              # f"Valid dice enhancing: {valid_metrics['dice'][Labels.ENHANCING]:.4f} "
               f"Time per epoch: {time() - time_0:.4f}s", flush=True)
 
         mlflow.log_metric("train_loss", train_loss)
@@ -207,20 +213,22 @@ if __name__ == '__main__':
             [valid_metrics['dice'][Labels.BACKGROUND],
              valid_metrics['dice'][Labels.EDEMA],
              valid_metrics['dice'][Labels.NON_ENHANCING],
-             valid_metrics['dice'][Labels.ENHANCING]])
+             # valid_metrics['dice'][Labels.ENHANCING]
+             ])
 
         mean_dice_no_background = np.mean([
             valid_metrics['dice'][Labels.EDEMA],
             valid_metrics['dice'][Labels.NON_ENHANCING],
-            valid_metrics['dice'][Labels.ENHANCING]])
+            # valid_metrics['dice'][Labels.ENHANCING]
+        ])
 
         mlflow.log_metric("train_loss", train_loss, epoch)
         mlflow.log_metric("valid_loss", valid_loss, epoch)
         mlflow.log_metric("mean_dice", mean_dice, epoch)
         mlflow.log_metric("dice_background", valid_metrics['dice'][Labels.BACKGROUND], epoch)
-        mlflow.log_metric("dice_edema", valid_metrics['dice'][Labels.EDEMA], epoch)
-        mlflow.log_metric("dice_non_enhancing", valid_metrics['dice'][Labels.NON_ENHANCING], epoch)
-        mlflow.log_metric("dice_enhancing", valid_metrics['dice'][Labels.ENHANCING], epoch)
+        mlflow.log_metric("dice_pancreas", valid_metrics['dice'][Labels.EDEMA], epoch)
+        mlflow.log_metric("dice_cancer", valid_metrics['dice'][Labels.NON_ENHANCING], epoch)
+        # mlflow.log_metric("dice_enhancing", valid_metrics['dice'][Labels.ENHANCING], epoch)
         mlflow.log_metric("time_per_epoch", time() - time_0, epoch)
 
         if early_stopping.check_stop_condition(valid_loss):
@@ -228,6 +236,6 @@ if __name__ == '__main__':
     test_loss, test_metrics = run_validation_epoch(model, test_loader, criterion, metrics, args.device)
     mlflow.log_metric("test_loss", test_loss)
     mlflow.log_metric("test_dice_background", test_metrics['dice'][Labels.BACKGROUND])
-    mlflow.log_metric("test_dice_edema", test_metrics['dice'][Labels.EDEMA])
-    mlflow.log_metric("test_dice_non_enhancing", test_metrics['dice'][Labels.NON_ENHANCING])
-    mlflow.log_metric("test_dice_enhancing", test_metrics['dice'][Labels.ENHANCING])
+    mlflow.log_metric("test_dice_pancreas", test_metrics['dice'][Labels.EDEMA])
+    mlflow.log_metric("test_dice_cancer", test_metrics['dice'][Labels.NON_ENHANCING])
+    # mlflow.log_metric("test_dice_enhancing", test_metrics['dice'][Labels.ENHANCING])

@@ -1,0 +1,17 @@
+{
+    "test": [
+        "pancreas_311.nii.gz",
+        "pancreas_360.nii.gz",
+        "pancreas_386.nii.gz"
+    ],
+    "valid": [
+        "pancreas_308.nii.gz",
+        "pancreas_389.nii.gz",
+        "pancreas_019.nii.gz"
+    ],
+    "train": [
+        "pancreas_414.nii.gz",
+        "pancreas_376.nii.gz",
+        "pancreas_012.nii.gz"
+    ]
+}

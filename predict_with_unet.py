@@ -31,6 +31,12 @@ class Labels(enum.IntEnum):
     ENHANCING = 3
 
 
+class PadTo160:
+    def __call__(self, x):
+        a = F.pad(x, [0, 0, 0, 0, 16 - (x.shape[1] % 16), 0]) if x.shape[1] % 16 != 0 else x
+        return a
+
+
 if __name__ == '__main__':
 
     def create_parser():
@@ -57,20 +63,19 @@ if __name__ == '__main__':
 
     volumes_transformations = trfs.Compose([transformations.NiftiToTorchDimensionsReorderTransformation(),
                                             trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                            trfs.Lambda(
-                                                lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 2 != 0 else x),
+                                            PadTo160(),
                                             transformations.StandardizeVolumeWithFilter(0),
                                             trfs.Lambda(lambda x: x.float()),
-                                            transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                            transformations.ResizeVolumeTransformation(
+                                                (args.input_size, args.input_size))
                                             ])
     masks_transformations = trfs.Compose([trfs.Lambda(lambda x: np.expand_dims(x, 3)),
                                           transformations.NiftiToTorchDimensionsReorderTransformation(),
                                           trfs.Lambda(lambda x: torch.from_numpy(x)),
-                                          transformations.OneHotEncoding([0, 1, 2, 3]),
-                                          trfs.Lambda(
-                                              lambda x: F.pad(x, [0, 0, 0, 0, 5, 0]) if x.shape[1] % 16 != 0 else x),
+                                          transformations.OneHotEncoding([0, 1, 2]),
+                                          PadTo160(),
                                           trfs.Lambda(lambda x: x.float()),
-                                          transformations.ResizeVolumeTransformation((args.input_size,args.input_size))
+                                          transformations.ResizeVolumeTransformation((args.input_size, args.input_size))
                                           ])
 
     with open(args.division_json) as division_json:
